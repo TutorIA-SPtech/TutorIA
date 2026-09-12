@@ -1,15 +1,14 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons'; // Importação do ícone adicionada
+import { Ionicons } from '@expo/vector-icons';
 
 export default function IntroductionScreen(){
-    // Instância obrigatória do hook para o router.push funcionar
     const router = useRouter(); 
 
     return (
         <View style={styles.container}>
-            {/* Gradientes */}
+
             <LinearGradient
                 colors={['rgba(28, 16, 80, 0.4)', 'transparent']}
                 start={{ x: 1, y: 0 }}
@@ -25,14 +24,14 @@ export default function IntroductionScreen(){
                 pointerEvents="none"
             />
 
-            {/* Conteúdo Central */}
+
             <View style={styles.content}>
                 <Image source={require('../../assets/tuti.png')} style={{width: 100, height: 130}}/>
                 <Text style={styles.title}>TutorIA</Text>
                 <Text style={styles.subtitle}>A trilha que se ajusta ao que você já sabe.</Text>
             </View>
 
-            {/* Rodapé com Botão */}
+           
             <View style={styles.footer}>
                 <TouchableOpacity 
                     style={styles.nextButton}

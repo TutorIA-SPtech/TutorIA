@@ -28,10 +28,6 @@
     "plugins": [
       "expo-router",
       "expo-status-bar"
-    ],
-    "androidNavigationBar": {
-      "backgroundColor": "#0A0D14",
-      "barStyle": "light-content"
-    }
+    ]
   }
 }
