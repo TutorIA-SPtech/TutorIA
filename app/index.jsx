@@ -7,6 +7,10 @@ export default function IntroductionScreen(){
         <View style={styles.container}>
             <Text>TutorIA</Text>
             <Text>A trilha que se ajusta ao que você já sabe</Text>
+
+            <Link href="/rotina" style={{ marginTop: 20, color: '#8E9BFF', fontWeight: 'bold' }}>
+                Ir para rotina (temporário)
+            </Link>
         </View>
     )
 }
