@@ -238,7 +238,7 @@ export default function RotinaScreen() {
 
         {/* Botao continuar */}
         <Pressable
-          onPress={() => router.push('/convite')}
+          onPress={() => router.push('/onboarding/convite')}
           style={({ pressed }) => [styles.botaoArea, pressed && styles.botaoPressionado]}
         >
           <LinearGradient

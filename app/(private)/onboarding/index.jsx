@@ -2,13 +2,13 @@ import React from "react";
 
 import {
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
-  StatusBar,
   Text,
   View,
 } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, styles, tint, gradients } from "../../../styles/onboarding";
 import { LinearGradient } from "expo-linear-gradient";
@@ -84,13 +84,13 @@ export default function ObjetivoScreen({
   const podeContinuar = Boolean(curso);
   const router = useRouter();
 
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.background}>
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={colors.background}
-        />
+      <View style={[styles.safeArea, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        {/* <StatusBar style="light" /> */}
+
         <View style={styles.brilho} pointerEvents="none" />
 
         <View style={styles.header}>
@@ -222,7 +222,7 @@ export default function ObjetivoScreen({
               pointerEvents="none"
             />
             <Pressable
-              onPress={onContinuar}
+              onPress={() => router.push("/onboarding/rotina")}
               disabled={!podeContinuar}
               accessibilityRole="button"
               accessibilityState={{ disabled: !podeContinuar }}
@@ -257,7 +257,7 @@ export default function ObjetivoScreen({
             </Pressable>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

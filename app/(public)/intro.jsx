@@ -1,12 +1,10 @@
-import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import PrimaryButton from "../../components/Button"; // Importando o componente que criamos
-import { Link } from "expo-router";
+import PrimaryButton from "../../components/Button";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Componente local apenas para organizar os itens da lista
 const FeatureItem = ({ icon, text }) => (
   <View style={styles.featureItem}>
     <View style={styles.iconContainer}>
@@ -21,7 +19,7 @@ export default function IntroScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <LinearGradient
         colors={["rgba(28, 16, 80, 0.4)", "transparent"]}
         start={{ x: 1, y: 0 }}
@@ -37,8 +35,17 @@ export default function IntroScreen() {
         pointerEvents="none"
       />
 
-      <View style={styles.content}>
-        {/* Cabeçalho */}
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { 
+            paddingTop: insets.top + 40,
+            paddingBottom: Math.max(insets.bottom, 24) 
+          }
+        ]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         <View style={styles.header}>
           <Image
             source={require("../../assets/tuti.png")}
@@ -54,7 +61,6 @@ export default function IntroScreen() {
           </Text>
         </View>
 
-        {/* Lista de Features */}
         <View style={styles.featuresList}>
           <FeatureItem icon="time-outline" text="Diagnóstico de 12 minutos" />
           <FeatureItem
@@ -65,13 +71,8 @@ export default function IntroScreen() {
           <FeatureItem icon="sparkles-outline" text="Peça o que quiser à IA" />
         </View>
 
-        {/* Rodapé dinâmico */}
-        <View
-          style={[
-            styles.footer,
-            { paddingBottom: Math.max(insets.bottom, 24) },
-          ]}
-        >
+        {/* Rodapé agora faz parte do fluxo do Scroll */}
+        <View style={styles.footer}>
           <PrimaryButton
             title="Criar minha conta"
             onPress={() => router.push("/sign-up")}
@@ -84,8 +85,8 @@ export default function IntroScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -94,12 +95,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0A0D14",
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     justifyContent: "space-between",
-    paddingTop: 40,
-    paddingBottom: 20,
     zIndex: 1,
   },
   header: {
@@ -124,8 +123,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   featuresList: {
-    flex: 1,
     gap: 20,
+    marginBottom: 9, 
   },
   featureItem: {
     flexDirection: "row",
@@ -146,7 +145,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   footer: {
-    marginTop: "auto",
     width: "100%",
   },
   loginRow: {
@@ -159,7 +157,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   loginLink: {
-    color: "#9FA8FF", // Cor roxa do link
+    color: "#9FA8FF", 
     fontSize: 14,
     fontWeight: "bold",
   },

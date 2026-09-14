@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform,ScrollView} from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CadastroScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -15,7 +18,8 @@ export default function CadastroScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]} 
+                  showsVerticalScrollIndicator={false}>
         
         {/* Cabeçalho */}
         <View style={styles.header}>
@@ -120,8 +124,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingHorizontal: 24, 
     paddingBottom: 40,
   },
   header: {
