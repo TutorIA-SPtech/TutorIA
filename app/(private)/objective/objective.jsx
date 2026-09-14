@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-import { colors, styles, tint, gradients } from '../styles';
+import { colors, styles, tint, gradients } from '../objective/objective_style';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, ArrowRight, Check, ChevronRight } from 'lucide-react-native';
 
@@ -54,12 +54,7 @@ export default function ObjetivoScreen({
   const podeContinuar = Boolean(curso);
 
   return (
-    <ImageBackground
-      source={require('../assets/background-points.png')}
-      resizeMode="cover"
-      style={styles.background}
-      accessible={false}
-    >
+    <View style={styles.background}>
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="light-content" backgroundColor={colors.background} />
         <View style={styles.brilho} pointerEvents="none" />
@@ -205,6 +200,6 @@ export default function ObjetivoScreen({
   </View>
 </View>
       </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 }

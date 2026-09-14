@@ -35,6 +35,7 @@ export const tint = {
 export const styles = StyleSheet.create({
   background: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
