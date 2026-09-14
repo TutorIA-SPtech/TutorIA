@@ -39,7 +39,6 @@ export default function CadastroScreen() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>E-MAIL</Text>
-            {/* Adicionado o estilo de borda ativa (roxa) como exemplo no e-mail */}
             <TextInput
               style={[styles.input, styles.inputActive]}
               keyboardType="email-address"
@@ -80,25 +79,23 @@ export default function CadastroScreen() {
         </View>
 
         {/* Botão Principal */}
-        <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8} onPress={() => router.push('/onboarding')}>
           <Text style={styles.primaryButtonText}>Criar conta</Text>
           <Ionicons name="arrow-forward" size={20} color="#0A0D14" />
         </TouchableOpacity>
 
-        {/* Divisor */}
         <View style={styles.dividerContainer}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>OU</Text>
           <View style={styles.dividerLine} />
         </View>
 
-        {/* Botão Google */}
         <TouchableOpacity style={styles.googleButton} activeOpacity={0.8}>
           <Ionicons name="logo-google" size={18} color="#A0AFFF" />
           <Text style={styles.googleButtonText}>Continuar com Google</Text>
         </TouchableOpacity>
 
-        {/* Card de Informação Inferior */}
+
         <View style={styles.infoCard}>
           <View style={styles.infoHeader}>
             <View style={styles.iconWrapper}>

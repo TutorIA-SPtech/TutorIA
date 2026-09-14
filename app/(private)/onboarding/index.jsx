@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 import {
   Pressable,
@@ -8,29 +8,60 @@ import {
   StatusBar,
   Text,
   View,
-} from 'react-native';
+} from "react-native";
 
-import { colors, styles, tint, gradients } from './style';
-import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, ArrowRight, Check, ChevronRight } from 'lucide-react-native';
+import { colors, styles, tint, gradients } from "../../../styles/onboarding";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+} from "lucide-react-native";
 
+import { useRouter } from "expo-router";
 
 const AREAS = [
-  { nome: 'Matemática', cor: colors.lavender, fundo: tint.lavender, linha: tint.lavenderLine },
-  { nome: 'Linguagens', cor: colors.mint, fundo: tint.mint, linha: tint.mintLine },
-  { nome: 'Natureza', cor: colors.coral, fundo: tint.coral, linha: tint.coralLine },
-  { nome: 'Humanas', cor: colors.amber, fundo: tint.amber, linha: tint.amberLine },
-  { nome: 'Redação', cor: colors.textSecondary, fundo: tint.neutral, linha: tint.neutralLine },
+  {
+    nome: "Matemática",
+    cor: colors.lavender,
+    fundo: tint.lavender,
+    linha: tint.lavenderLine,
+  },
+  {
+    nome: "Linguagens",
+    cor: colors.mint,
+    fundo: tint.mint,
+    linha: tint.mintLine,
+  },
+  {
+    nome: "Natureza",
+    cor: colors.coral,
+    fundo: tint.coral,
+    linha: tint.coralLine,
+  },
+  {
+    nome: "Humanas",
+    cor: colors.amber,
+    fundo: tint.amber,
+    linha: tint.amberLine,
+  },
+  {
+    nome: "Redação",
+    cor: colors.textSecondary,
+    fundo: tint.neutral,
+    linha: tint.neutralLine,
+  },
 ];
 
 export const CURSO_EXEMPLO = {
-  nome: 'Engenharia Civil',
-  instituicao: 'UFPE',
+  nome: "Engenharia Civil",
+  instituicao: "UFPE",
   notaCorte: 712.4,
   anoNotaCorte: 2025,
 };
 
-const formatarNota = (nota) => nota.toFixed(1).replace('.', ',');
+const formatarNota = (nota) => nota.toFixed(1).replace(".", ",");
 
 function IconeNotaCorte() {
   return (
@@ -43,7 +74,7 @@ function IconeNotaCorte() {
 }
 export default function ObjetivoScreen({
   curso = CURSO_EXEMPLO,
-  dataProva = '08/11/2026',
+  dataProva = "08/11/2026",
   passoAtual = 1,
   totalPassos = 3,
   onBack,
@@ -51,20 +82,27 @@ export default function ObjetivoScreen({
   onContinuar,
 }) {
   const podeContinuar = Boolean(curso);
+  const router = useRouter();
 
   return (
     <View style={styles.background}>
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={colors.background}
+        />
         <View style={styles.brilho} pointerEvents="none" />
 
         <View style={styles.header}>
           <Pressable
-            onPress={onBack}
+            onPress={() => router.back()}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Voltar"
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed && styles.pressed,
+            ]}
           >
             <ArrowLeft size={20} color={colors.lavender} strokeWidth={2.5} />
           </Pressable>
@@ -133,7 +171,7 @@ export default function ObjetivoScreen({
             accessibilityLabel={
               curso
                 ? `Curso pretendido: ${curso.nome}, ${curso.instituicao}. Toque para trocar`
-                : 'Escolher curso pretendido'
+                : "Escolher curso pretendido"
             }
             style={({ pressed }) => [
               styles.cursoRow,
@@ -142,9 +180,15 @@ export default function ObjetivoScreen({
             ]}
           >
             <Text style={styles.cursoNome}>
-              {curso ? `${curso.nome} · ${curso.instituicao}` : 'Escolher curso'}
+              {curso
+                ? `${curso.nome} · ${curso.instituicao}`
+                : "Escolher curso"}
             </Text>
-            <ChevronRight size={20} color={colors.textMuted} strokeWidth={2.5} />
+            <ChevronRight
+              size={20}
+              color={colors.textMuted}
+              strokeWidth={2.5}
+            />
           </Pressable>
 
           {curso ? (
@@ -162,42 +206,57 @@ export default function ObjetivoScreen({
             </View>
           ) : (
             <Text style={styles.notaCorteVazia}>
-              Sem curso escolhido eu distribuo seu tempo igualmente entre as áreas.
+              Sem curso escolhido eu distribuo seu tempo igualmente entre as
+              áreas.
             </Text>
           )}
         </ScrollView>
 
-      <View style={styles.footer}>
-  <View style={styles.continuarWrapper}>
-    <View style={[styles.continuarGlow, !podeContinuar && styles.continuarGlowDisabled]} pointerEvents="none" />
-    <Pressable
-      onPress={onContinuar}
-      disabled={!podeContinuar}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: !podeContinuar }}
-      style={({ pressed }) => [styles.continuarButton, pressed && podeContinuar && styles.pressed]}
-    >
-      {podeContinuar ? (
-        <LinearGradient
-          colors={gradients.continuar}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      ) : null}
-      <Text style={[styles.continuarText, !podeContinuar && styles.continuarTextDisabled]}>
-        Continuar
-      </Text>
-      <View style={styles.continuarSeta}>
-        <ArrowRight
-          size={18}
-          color={podeContinuar ? colors.onAccent : colors.textMuted}
-          strokeWidth={2.5}
-        />
-      </View>
-    </Pressable>
-  </View>
-</View>
+        <View style={styles.footer}>
+          <View style={styles.continuarWrapper}>
+            <View
+              style={[
+                styles.continuarGlow,
+                !podeContinuar && styles.continuarGlowDisabled,
+              ]}
+              pointerEvents="none"
+            />
+            <Pressable
+              onPress={onContinuar}
+              disabled={!podeContinuar}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !podeContinuar }}
+              style={({ pressed }) => [
+                styles.continuarButton,
+                pressed && podeContinuar && styles.pressed,
+              ]}
+            >
+              {podeContinuar ? (
+                <LinearGradient
+                  colors={gradients.continuar}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              ) : null}
+              <Text
+                style={[
+                  styles.continuarText,
+                  !podeContinuar && styles.continuarTextDisabled,
+                ]}
+              >
+                Continuar
+              </Text>
+              <View style={styles.continuarSeta}>
+                <ArrowRight
+                  size={18}
+                  color={podeContinuar ? colors.onAccent : colors.textMuted}
+                  strokeWidth={2.5}
+                />
+              </View>
+            </Pressable>
+          </View>
+        </View>
       </SafeAreaView>
     </View>
   );
