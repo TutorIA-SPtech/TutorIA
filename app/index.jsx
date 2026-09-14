@@ -1,25 +1,6 @@
-import { View, Text, StyleSheet } from "react-native";
-import { Link } from "expo-router";
+import { Redirect } from "expo-router";
 
-export default function IntroductionScreen(){
-
-    return (
-        <View style={styles.container}>
-            <Text>TutorIA</Text>
-            <Text>A trilha que se ajusta ao que você já sabe</Text>
-
-            <Link href="/rotina" style={{ marginTop: 20, color: '#8E9BFF', fontWeight: 'bold' }}>
-                Ir para rotina (temporário)
-            </Link>
-        </View>
-    )
+export default function Index() {
+  // Mais para frente, aqui entra a lógica: se tiver token, vai pro App; se não, vai pro Welcome.
+  return <Redirect href="/welcome" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-})
