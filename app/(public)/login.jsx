@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../../components/Button';
-import DotGridBackground from '../../components/DotGridBackground';
+// import DotGridBackground from '../../components/DotGridBackground';
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -26,7 +26,7 @@ export default function LoginScreen() {
 
     return (
         <View style={styles.container}>
-            <DotGridBackground />
+            {/* <DotGridBackground /> */}
             <LinearGradient
                 colors={['rgba(28, 16, 80, 0.4)', 'transparent']}
                 start={{ x: 1, y: 0 }}
