@@ -1,7 +1,6 @@
 import React from 'react';
 
 import {
-  ImageBackground,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -11,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import { colors, styles, tint, gradients } from '../objective/objective_style';
+import { colors, styles, tint, gradients } from './style';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, ArrowRight, Check, ChevronRight } from 'lucide-react-native';
 
