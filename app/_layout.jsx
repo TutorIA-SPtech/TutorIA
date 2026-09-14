@@ -19,13 +19,5 @@ export default function RootLayout() {
     return null;
   }
 
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="introduction/index" />
-      <Stack.Screen name="account/index" />
-      <Stack.Screen name="rotina/index" />
-      <Stack.Screen name="convite/index" />
-    </Stack>
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
