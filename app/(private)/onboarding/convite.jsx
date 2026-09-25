@@ -119,7 +119,7 @@ export default function ConviteScreen() {
         {/* Acoes */}
         <View style={styles.acoes}>
           <Pressable
-            onPress={() => router.push('/diagnostico')}
+            onPress={() => router.push('/(private)/questionnaire')}
             style={({ pressed }) => [styles.botaoArea, pressed && styles.botaoPressionado]}
           >
             <LinearGradient
