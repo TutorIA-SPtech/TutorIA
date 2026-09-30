@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { styles } from "../../../styles/questionnaire";
+import { styles } from "../../../styles/questionnaire/questionnaire";
 
 const questionsData = [
   {
@@ -183,8 +183,7 @@ export default function Questionnaire() {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedOption(null);
     } else {
-      console.log("Diagnóstico finalizado!");
-      router.back();
+      router.push("/(private)/questionnaire/analisys");
     }
   };
 
