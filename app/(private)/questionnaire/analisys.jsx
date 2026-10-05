@@ -22,16 +22,12 @@ export default function AnalysisScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Estados de progresso para os checks (0 a 100)
   const [currentProgress, setCurrentProgress] = useState(0);
 
-  // Valores de Animação
   const progressAnim = useRef(new Animated.Value(0)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
 
-  // Lógica de Sequência (0 -> 20 -> 50 -> 80 -> 100)
   useEffect(() => {
-    // 1. Inicia a rotação contínua da bolinha tracejada de carregamento
     Animated.loop(
       Animated.timing(spinAnim, {
         toValue: 1,
@@ -43,9 +39,9 @@ export default function AnalysisScreen() {
 
     Animated.sequence([
       Animated.delay(500),
-      Animated.timing(progressAnim, { toValue: 20, duration: 1000, useNativeDriver: false }),
+      Animated.timing(progressAnim, { toValue: 10, duration: 1000, useNativeDriver: false }),
       Animated.delay(1200),
-      Animated.timing(progressAnim, { toValue: 50, duration: 1500, useNativeDriver: false }),
+      Animated.timing(progressAnim, { toValue: 45, duration: 1500, useNativeDriver: false }),
       Animated.delay(1200),
       Animated.timing(progressAnim, { toValue: 80, duration: 1500, useNativeDriver: false }),
       Animated.delay(1000),
@@ -138,7 +134,6 @@ export default function AnalysisScreen() {
               />
             </Svg>
 
-            {/* A sua logo entra exatamente aqui */}
             <View style={styles.logoWrapper}>
               <Image 
                 source={require('../../../assets/tuti.png')} 
