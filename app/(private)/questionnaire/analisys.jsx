@@ -11,7 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -20,6 +20,7 @@ import { styles } from '../../../styles/questionnaire/analisys';
 
 export default function AnalysisScreen() {
   const router = useRouter();
+  const { result } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
 
   const [currentProgress, setCurrentProgress] = useState(0);
@@ -50,7 +51,10 @@ export default function AnalysisScreen() {
       if (finished) {
         setTimeout(() => {
           console.log("Análise concluída, avançando...");
-          router.push('/(private)/questionnaire/results'); 
+          router.push({
+            pathname: '/(private)/questionnaire/results',
+            params: { result },
+          });
         }, 1000);
       }
     });

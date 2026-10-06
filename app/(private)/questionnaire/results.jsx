@@ -1,27 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import { styles } from '../../../styles/questionnaire/results';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
-const mockBackendData = {
-  overallScore: 59,
-  areas: [
-    { name: 'Matemática', score: 62, color: '#9FA8FF' },
-    { name: 'Linguagens', score: 71, color: '#57DDA9' },
-    { name: 'Ciências da natureza', score: 38, color: '#FF8A65' },
-    { name: 'Humanas', score: 55, color: '#B39DFF' },
-  ],
-  priority: {
-    subject: 'Química',
-    reason: 'estequiometria trava 4 assuntos seguintes do seu edital.'
-  }
-};
 
 const AnimatedCircleProgress = ({ score }) => {
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -98,6 +84,29 @@ const AnimatedProgressBar = ({ targetPercentage, color }) => {
 export default function ResultsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { result: resultParam } = useLocalSearchParams();
+  const diagnosticResult = useMemo(() => {
+    if (!resultParam || Array.isArray(resultParam)) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(resultParam);
+    } catch (error) {
+      console.error('Não foi possível carregar o resultado do diagnóstico.', error);
+      return null;
+    }
+  }, [resultParam]);
+
+  if (!diagnosticResult) {
+    return (
+      <View style={styles.container}>
+        <Text style={[styles.pageTitle, { margin: 24 }]}>
+          Não foi possível carregar seu resultado.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -112,10 +121,12 @@ export default function ResultsScreen() {
         <Text style={styles.pageTitle}>Seu ponto de partida</Text>
 
         <View style={styles.mainCard}>
-          <AnimatedCircleProgress score={mockBackendData.overallScore} />
+          <AnimatedCircleProgress score={diagnosticResult.overallScore} />
           <View style={styles.mainCardTextContainer}>
             <Text style={styles.mainCardTitle}>Domínio geral{'\n'}estimado</Text>
-            <Text style={styles.mainCardSubtitle}>Baseado em 20 respostas · fica mais preciso a cada dia</Text>
+            <Text style={styles.mainCardSubtitle}>
+              Baseado em {diagnosticResult.totalQuestions} respostas · fica mais preciso a cada dia
+            </Text>
           </View>
         </View>
 
@@ -123,11 +134,10 @@ export default function ResultsScreen() {
           <Text style={styles.sectionLabel}>POR ÁREA</Text>
           
           <View style={styles.areasList}>
-            {mockBackendData.areas.map((area, index) => (
-              <View key={index} style={styles.areaItem}>
+            {diagnosticResult.areas.map((area) => (
+              <View key={area.name} style={styles.areaItem}>
                 <View style={styles.areaHeader}>
                   <Text style={styles.areaName}>{area.name}</Text>
-                  {/* Pinta o texto da % com a mesma cor da barra para fidelidade ao design */}
                   <Text style={[styles.areaScore, { color: area.color }]}>{area.score}%</Text>
                 </View>
                 <AnimatedProgressBar targetPercentage={area.score} color={area.color} />
@@ -142,8 +152,8 @@ export default function ResultsScreen() {
             <Text style={styles.priorityLabel}>PRIORIDADE</Text>
           </View>
           <Text style={styles.priorityText}>
-            <Text style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{mockBackendData.priority.subject}</Text>
-            {' — '}{mockBackendData.priority.reason}
+            <Text style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{diagnosticResult.priority.subject}</Text>
+            {' — '}{diagnosticResult.priority.reason}
           </Text>
         </View>
 
