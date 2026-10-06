@@ -1,5 +1,3 @@
-import React from "react";
-
 import {
   Pressable,
   ScrollView,
@@ -7,7 +5,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, styles, tint, gradients } from "../../../styles/onboarding";
