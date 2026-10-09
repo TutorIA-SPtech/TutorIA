@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,19 +15,70 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../../components/Button';
+import { useAuth } from '../../contexts/AuthContext';
+import { signUp } from '../../services/authApi';
+import { ApiError } from '../../services/apiClient';
+import { validateSignUp } from '../../utils/authValidation';
 
 export default function CadastroScreen() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  
+  const [erros, setErros] = useState({});
+  const [erroGeral, setErroGeral] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const envioEmAndamento = useRef(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [nomeFocado, setNomeFocado] = useState(false);
   const [emailFocado, setEmailFocado] = useState(false);
   const [senhaFocada, setSenhaFocada] = useState(false);
+
+  function atualizarCampo(campo, valor, atualizar) {
+    atualizar(valor);
+    setErros((atuais) => {
+      const proximos = { ...atuais };
+      delete proximos[campo];
+      return proximos;
+    });
+    setErroGeral('');
+  }
+
+  async function enviarFormulario() {
+    if (envioEmAndamento.current) {
+      return;
+    }
+
+    const errosDeValidacao = validateSignUp({ name: nome, email, password: senha });
+    setErros(errosDeValidacao);
+    setErroGeral('');
+    if (Object.keys(errosDeValidacao).length > 0) {
+      return;
+    }
+
+    envioEmAndamento.current = true;
+    setEnviando(true);
+    try {
+      const credenciais = await signUp({
+        name: nome.trim(),
+        email: email.trim(),
+        password: senha,
+      });
+      await signIn(credenciais);
+      router.replace('/onboarding');
+    } catch (error) {
+      setErros(error instanceof ApiError ? error.fieldErrors : {});
+      setErroGeral(error instanceof ApiError
+        ? error.message
+        : 'Não foi possível criar sua conta agora. Tente novamente.');
+    } finally {
+      envioEmAndamento.current = false;
+      setEnviando(false);
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -78,42 +129,77 @@ export default function CadastroScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>NOME</Text>
                 <TextInput
-                  style={[styles.input, nomeFocado && styles.inputActive]}
+                  style={[styles.input, nomeFocado && styles.inputActive, erros.name && styles.inputError]}
                   value={nome}
-                  onChangeText={setNome}
+                  onChangeText={(valor) => atualizarCampo('name', valor, setNome)}
                   onFocus={() => setNomeFocado(true)}
-                  onBlur={() => setNomeFocado(false)}
+                  onBlur={() => {
+                    setNomeFocado(false);
+                    if (!erroGeral) {
+                      const validacao = validateSignUp({ name: nome, email, password: senha });
+                      setErros((atuais) => ({ ...atuais, name: validacao.name }));
+                    }
+                  }}
+                  editable={!enviando}
+                  autoComplete="name"
+                  accessibilityLabel="Nome"
                   placeholderTextColor="#5C668A"
                 />
+                {erros.name ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{erros.name}</Text> : null}
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>E-MAIL</Text>
                 <TextInput
-                  style={[styles.input, emailFocado && styles.inputActive]}
+                  style={[styles.input, emailFocado && styles.inputActive, erros.email && styles.inputError]}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(valor) => atualizarCampo('email', valor, setEmail)}
                   onFocus={() => setEmailFocado(true)}
-                  onBlur={() => setEmailFocado(false)}
+                  onBlur={() => {
+                    setEmailFocado(false);
+                    if (!erroGeral) {
+                      const validacao = validateSignUp({ name: nome, email, password: senha });
+                      setErros((atuais) => ({ ...atuais, email: validacao.email }));
+                    }
+                  }}
+                  editable={!enviando}
+                  autoComplete="email"
+                  accessibilityLabel="E-mail"
                   placeholderTextColor="#5C668A"
                 />
+                {erros.email ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{erros.email}</Text> : null}
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>SENHA</Text>
-                <View style={[styles.passwordContainer, senhaFocada && styles.inputActive]}>
+                <View style={[styles.passwordContainer, senhaFocada && styles.inputActive, erros.password && styles.inputError]}>
                   <TextInput
                     style={styles.passwordInput}
                     secureTextEntry={!mostrarSenha}
                     value={senha}
-                    onChangeText={setSenha}
+                    onChangeText={(valor) => atualizarCampo('password', valor, setSenha)}
                     onFocus={() => setSenhaFocada(true)}
-                    onBlur={() => setSenhaFocada(false)}
+                    onBlur={() => {
+                      setSenhaFocada(false);
+                      if (!erroGeral) {
+                        const validacao = validateSignUp({ name: nome, email, password: senha });
+                        setErros((atuais) => ({ ...atuais, password: validacao.password }));
+                      }
+                    }}
+                    editable={!enviando}
+                    autoComplete="new-password"
+                    accessibilityLabel="Senha"
                     placeholderTextColor="#5C668A"
                   />
-                  <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
+                  <TouchableOpacity
+                    onPress={() => setMostrarSenha(!mostrarSenha)}
+                    disabled={enviando}
+                    accessibilityRole="button"
+                    accessibilityLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
                     <Ionicons 
                       name={mostrarSenha ? "eye-off-outline" : "eye-outline"} 
                       size={20} 
@@ -121,6 +207,7 @@ export default function CadastroScreen() {
                     />
                   </TouchableOpacity>
                 </View>
+                {erros.password ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{erros.password}</Text> : null}
 
                 {/* Barrinha de Força da Senha */}
                 <View style={styles.strengthContainer}>
@@ -132,8 +219,10 @@ export default function CadastroScreen() {
               </View>
             </View>
 
+            {erroGeral ? <Text style={styles.formError} accessibilityRole="alert">{erroGeral}</Text> : null}
+
             {/* Botão Principal Componentizado */}
-            <PrimaryButton title="Criar conta" onPress={() => router.push('/onboarding')} />
+            <PrimaryButton title="Criar conta" onPress={enviarFormulario} loading={enviando} />
 
             {/* Divisor */}
             <View style={styles.dividerContainer}>
@@ -255,6 +344,20 @@ const styles = StyleSheet.create({
   },
   inputActive: {
     borderColor: '#8B94F7',
+  },
+  inputError: {
+    borderColor: '#FF7A59',
+  },
+  fieldError: {
+    color: '#FF9B83',
+    fontSize: 12,
+  },
+  formError: {
+    color: '#FF9B83',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   passwordContainer: {
     flexDirection: 'row',
