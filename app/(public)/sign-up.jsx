@@ -16,7 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../../components/Button';
 import { useAuth } from '../../contexts/AuthContext';
-import { signUp } from '../../services/authApi';
+import { loginWithGoogle, signUp } from '../../services/authApi';
+import { getGoogleIdToken, GoogleAuthError } from '../../services/googleAuth';
 import { ApiError } from '../../services/apiClient';
 import { validateSignUp } from '../../utils/authValidation';
 
@@ -74,6 +75,34 @@ export default function CadastroScreen() {
       setErroGeral(error instanceof ApiError
         ? error.message
         : 'Não foi possível criar sua conta agora. Tente novamente.');
+    } finally {
+      envioEmAndamento.current = false;
+      setEnviando(false);
+    }
+  }
+
+  async function entrarComGoogle() {
+    if (envioEmAndamento.current) {
+      return;
+    }
+
+    envioEmAndamento.current = true;
+    setEnviando(true);
+    setErros({});
+    setErroGeral('');
+    try {
+      const idToken = await getGoogleIdToken();
+      if (!idToken) {
+        return;
+      }
+
+      const credenciais = await loginWithGoogle(idToken);
+      await signIn(credenciais);
+      router.replace('/onboarding');
+    } catch (error) {
+      setErroGeral(error instanceof ApiError || error instanceof GoogleAuthError
+        ? error.message
+        : 'Não foi possível entrar com o Google. Tente novamente.');
     } finally {
       envioEmAndamento.current = false;
       setEnviando(false);
@@ -232,10 +261,17 @@ export default function CadastroScreen() {
             </View>
 
             {/* Botão Google */}
-            <TouchableOpacity style={styles.googleButton} activeOpacity={0.8}>
-              <Ionicons name="logo-google" size={18} color="#A0AFFF" />
-              <Text style={styles.googleButtonText}>Continuar com Google</Text>
-            </TouchableOpacity>
+            {Platform.OS !== 'web' ? (
+              <TouchableOpacity
+                style={styles.googleButton}
+                activeOpacity={0.8}
+                onPress={entrarComGoogle}
+                disabled={enviando}
+              >
+                <Ionicons name="logo-google" size={18} color="#A0AFFF" />
+                <Text style={styles.googleButtonText}>Continuar com Google</Text>
+              </TouchableOpacity>
+            ) : null}
 
             {/* Card de Privacidade */}
             <View style={styles.infoCard}>

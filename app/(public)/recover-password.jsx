@@ -15,6 +15,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../../components/Button';
 import DotGridBackground from '../../components/DotGridBackground';
+import { requestPasswordRecovery } from '../../services/authApi';
+import { ApiError } from '../../services/apiClient';
+import { validateEmail } from '../../utils/authValidation';
 
 const SEGUNDOS_REENVIO = 42;
 
@@ -24,6 +27,9 @@ export default function RecuperarSenhaScreen() {
     const [emailFocado, setEmailFocado] = useState(false);
     const [enviado, setEnviado] = useState(false);
     const [contagem, setContagem] = useState(SEGUNDOS_REENVIO);
+    const [enviando, setEnviando] = useState(false);
+    const [erroEmail, setErroEmail] = useState('');
+    const [erroGeral, setErroGeral] = useState('');
     const timerRef = useRef(null);
 
     useEffect(() => {
@@ -33,18 +39,47 @@ export default function RecuperarSenhaScreen() {
         return () => clearTimeout(timerRef.current);
     }, [enviado, contagem]);
 
-    function handleEnviar() {
-        setEnviado(true);
-        setContagem(SEGUNDOS_REENVIO);
+    async function handleEnviar() {
+        const validacao = validateEmail(email);
+        setErroEmail(validacao);
+        setErroGeral('');
+        if (validacao || enviando) return;
+
+        setEnviando(true);
+        try {
+            await requestPasswordRecovery(email);
+            setEnviado(true);
+            setContagem(SEGUNDOS_REENVIO);
+        } catch (error) {
+            setErroGeral(error instanceof ApiError
+                ? error.message
+                : 'Não foi possível solicitar a recuperação agora. Tente novamente.');
+        } finally {
+            setEnviando(false);
+        }
     }
 
-    function handleReenviar() {
-        if (contagem === 0) setContagem(SEGUNDOS_REENVIO);
+    async function handleReenviar() {
+        if (contagem !== 0 || enviando) return;
+        setEnviando(true);
+        setErroGeral('');
+        try {
+            await requestPasswordRecovery(email);
+            setContagem(SEGUNDOS_REENVIO);
+        } catch (error) {
+            setErroGeral(error instanceof ApiError
+                ? error.message
+                : 'Não foi possível reenviar a solicitação. Tente novamente.');
+        } finally {
+            setEnviando(false);
+        }
     }
 
     function handleTrocarEmail() {
         setEnviado(false);
         setContagem(SEGUNDOS_REENVIO);
+        setErroEmail('');
+        setErroGeral('');
     }
 
     return (
@@ -102,16 +137,25 @@ export default function RecuperarSenhaScreen() {
                                     keyboardType="email-address"
                                     autoCapitalize="none"
                                     value={email}
-                                    onChangeText={setEmail}
+                                    onChangeText={(valor) => {
+                                        setEmail(valor);
+                                        setErroEmail('');
+                                        setErroGeral('');
+                                    }}
                                     onFocus={() => setEmailFocado(true)}
                                     onBlur={() => setEmailFocado(false)}
-                                    editable={!enviado}
+                                    editable={!enviado && !enviando}
+                                    autoCorrect={false}
+                                    autoComplete="email"
+                                    accessibilityLabel="E-mail da conta"
                                     placeholderTextColor="#5C668A"
                                 />
+                                {erroEmail ? <Text style={styles.fieldError}>{erroEmail}</Text> : null}
                             </View>
                         </View>
 
-                        <PrimaryButton title="Enviar link por e-mail" onPress={handleEnviar} />
+                        {erroGeral ? <Text style={styles.formError} accessibilityRole="alert">{erroGeral}</Text> : null}
+                        <PrimaryButton title="Enviar instruções por e-mail" onPress={handleEnviar} loading={enviando} disabled={enviado} />
 
                         {enviado && (
                             <View style={styles.successCard}>
@@ -119,11 +163,11 @@ export default function RecuperarSenhaScreen() {
                                     <View style={styles.successIconWrapper}>
                                         <Ionicons name="mail-outline" size={18} color="#57DDA9" />
                                     </View>
-                                    <Text style={styles.successLabel}>E-MAIL ENVIADO</Text>
+                                    <Text style={styles.successLabel}>SOLICITAÇÃO ENVIADA</Text>
                                 </View>
                                 <Text style={styles.successText}>
-                                    Chegou em <Text style={styles.successEmail}>{email}</Text>. Confira o spam se
-                                    não aparecer em 2 minutos.
+                                    Se existir uma conta associada a <Text style={styles.successEmail}>{email}</Text>,
+                                    enviaremos as instruções. Confira também a pasta de spam.
                                 </Text>
                                 <View style={styles.pillRow}>
                                     <TouchableOpacity style={styles.pill} onPress={handleReenviar} disabled={contagem > 0}>
@@ -166,6 +210,17 @@ export default function RecuperarSenhaScreen() {
 }
 
 const styles = StyleSheet.create({
+    fieldError: {
+        color: '#FF8F8F',
+        fontSize: 12,
+        marginTop: 5,
+    },
+    formError: {
+        color: '#FF8F8F',
+        fontSize: 13,
+        lineHeight: 19,
+        marginBottom: 12,
+    },
     container: {
         flex: 1,
         backgroundColor: '#0A0D14',

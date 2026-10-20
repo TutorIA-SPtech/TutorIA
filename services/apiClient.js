@@ -30,7 +30,7 @@ function getFieldErrors(fields) {
   }, {});
 }
 
-function getApiError(status, problem) {
+function getApiError(status, problem, unauthorizedMessage) {
   if (problem?.code === 'EMAIL_ALREADY_REGISTERED') {
     return new ApiError('Este e-mail já está cadastrado.', {
       email: 'Este e-mail já está cadastrado.',
@@ -38,7 +38,7 @@ function getApiError(status, problem) {
   }
 
   if (status === 401) {
-    return new ApiError('E-mail ou senha incorretos.');
+    return new ApiError(unauthorizedMessage || 'E-mail ou senha incorretos.');
   }
 
   if (status === 400) {
@@ -84,12 +84,17 @@ api.interceptors.response.use(
     }
 
     if (axios.isAxiosError(error) && error.response) {
-      return Promise.reject(getApiError(error.response.status, error.response.data));
+      return Promise.reject(getApiError(
+        error.response.status,
+        error.response.data,
+        error.config?.unauthorizedMessage,
+      ));
     }
 
     if (axios.isAxiosError(error)) {
       return Promise.reject(new ApiError(
-        'Não foi foi possível realizar o cadastro. Tente novamente mais tarde.',
+        error.config?.networkErrorMessage
+          || 'Não foi possível concluir a solicitação. Tente novamente.',
       ));
     }
 
@@ -97,12 +102,17 @@ api.interceptors.response.use(
   },
 );
 
-export async function apiRequest(path, { authenticated = true, ...options } = {}) {
+export async function apiRequest(
+  path,
+  { authenticated = true, unauthorizedMessage, networkErrorMessage, ...options } = {},
+) {
   try {
     const response = await api.request({
       ...options,
       url: path,
       authenticated,
+      unauthorizedMessage,
+      networkErrorMessage,
     });
     return response.data;
   } catch (error) {
