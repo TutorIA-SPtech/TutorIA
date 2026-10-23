@@ -282,6 +282,15 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     right: 24,
   },
+  sairLink: {
+    alignSelf: 'center',
+    marginTop: 16,
+  },
+  sairTexto: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
   pressed: {
     opacity: 0.75,
   },

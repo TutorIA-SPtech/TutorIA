@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
+import { useLogout } from '../../../hooks/useLogout';
 import Svg, { Defs, LinearGradient as SvgGradient, Stop, Rect, Circle, Path } from 'react-native-svg';
 
 const COR = {
@@ -51,6 +52,16 @@ function Tuti() {
 }
 
 export default function ConviteScreen() {
+  const { confirmarSaida } = useLogout();
+
+  const voltar = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    confirmarSaida();
+  };
+
   return (
     <SafeAreaView style={styles.tela}>
       <StatusBar style="light" />
@@ -73,7 +84,7 @@ export default function ConviteScreen() {
 
       {/* Cabecalho */}
       <View style={styles.cabecalho}>
-        <Pressable onPress={() => router.back()} style={styles.voltar} hitSlop={10}>
+        <Pressable onPress={voltar} style={styles.voltar} hitSlop={10}>
           <Ionicons name="arrow-back" size={15} color={COR.apagado} />
         </Pressable>
         <Text style={styles.cabecalhoTitulo}>Diagnóstico</Text>

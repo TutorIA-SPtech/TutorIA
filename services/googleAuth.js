@@ -63,4 +63,17 @@ export async function getGoogleIdToken() {
   }
 
   return response.data.idToken;
+
+}
+
+export async function signOutGoogle() {
+  if (Platform.OS === 'web') {
+    return;
+  }
+
+  try {
+    configureGoogleSignin();
+    await GoogleSignin.signOut();
+  } catch {
+  }
 }

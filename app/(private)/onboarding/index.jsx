@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useCallback } from "react";
 
 import {
+  BackHandler,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,7 +20,8 @@ import {
   ChevronRight,
 } from "lucide-react-native";
 
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useLogout } from "../../../hooks/useLogout";
 
 const AREAS = [
   {
@@ -83,8 +85,25 @@ export default function ObjetivoScreen({
 }) {
   const podeContinuar = Boolean(curso);
   const router = useRouter();
+  const { confirmarSaida } = useLogout();
 
   const insets = useSafeAreaInsets();
+
+  // Primeira tela privada: o que está antes na pilha é público (login/boas-vindas),
+  // então voltar daqui significa sair da conta.
+  function voltar() {
+    confirmarSaida();
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      const assinatura = BackHandler.addEventListener("hardwareBackPress", () => {
+        confirmarSaida();
+        return true;
+      });
+      return () => assinatura.remove();
+    }, [confirmarSaida])
+  );
 
   return (
     <View style={styles.background}>
@@ -95,7 +114,7 @@ export default function ObjetivoScreen({
 
         <View style={styles.header}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={voltar}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Voltar"
@@ -256,6 +275,16 @@ export default function ObjetivoScreen({
               </View>
             </Pressable>
           </View>
+
+          {/* Provisório até existir a tela de Perfil, que deve usar o mesmo useLogout. */}
+          <Pressable
+            onPress={confirmarSaida}
+            hitSlop={8}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.sairLink, pressed && styles.pressed]}
+          >
+            <Text style={styles.sairTexto}>Sair da conta</Text>
+          </Pressable>
         </View>
       </View>
     </View>

@@ -84,11 +84,13 @@ api.interceptors.response.use(
     }
 
     if (axios.isAxiosError(error) && error.response) {
-      return Promise.reject(getApiError(
+      const apiError = getApiError(
         error.response.status,
         error.response.data,
         error.config?.unauthorizedMessage,
-      ));
+      );
+      apiError.status = error.response.status;
+      return Promise.reject(apiError);
     }
 
     if (axios.isAxiosError(error)) {
