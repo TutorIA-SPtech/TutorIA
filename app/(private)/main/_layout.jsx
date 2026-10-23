@@ -35,7 +35,6 @@ export default function TabLayout() {
         }}
       />
       
-      {/* As rotas abaixo precisarão dos seus respectivos arquivos .jsx criados na pasta */}
       <Tabs.Screen
         name="plano"
         options={{

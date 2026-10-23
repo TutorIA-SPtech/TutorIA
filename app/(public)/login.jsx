@@ -110,7 +110,7 @@ export default function LoginScreen() {
                         </View>
 
                         {/* Botão principal (reaproveitando o componente já existente) */}
-                        <PrimaryButton title="Entrar" onPress={() => { }} />
+                        <PrimaryButton title="Entrar" onPress={() => router.replace('/(private)/main')} />
 
                         {/* Divisor */}
                         <View style={styles.dividerContainer}>
@@ -287,4 +287,3 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 });
-
