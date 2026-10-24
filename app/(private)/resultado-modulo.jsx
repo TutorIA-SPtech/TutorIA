@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRouter } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,6 +29,7 @@ const corDoAssunto = (assunto) =>
   assunto.acertos / assunto.total >= 0.7 ? COR_ACERTO : COR_ERRO;
 
 export default function ResultadoModuloScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
 
   // Valores derivados dos assuntos
@@ -130,7 +132,7 @@ export default function ResultadoModuloScreen() {
 
       {/* Botões fixos no rodapé */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <PrimaryButton title="Ver plano atualizado" onPress={() => console.log('Ver plano atualizado')} />
+        <PrimaryButton title="Ver plano atualizado" onPress={() => router.push('/plano-atualizado')} />
         <TouchableOpacity
           style={styles.secondaryButton}
           activeOpacity={0.8}

@@ -70,7 +70,7 @@ export default function HomeScreen() {
             <View style={styles.chip}><Text style={styles.chipText}>{data.trilha.questoes} questões</Text></View>
           </View>
           {/* Navegação conectada dinamicamente */}
-          <PrimaryButton title="Continuar" onPress={() => router.navigate('/plano')} />
+          <PrimaryButton title="Continuar" onPress={() => router.navigate('/tabs/plano')} />
         </View>
 
         {/* Seu domínio */}
