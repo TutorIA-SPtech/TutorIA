@@ -3,20 +3,25 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "start": "node scripts/start-expo.js",
+    "android": "node scripts/start-expo.js --android",
+    "ios": "node scripts/start-expo.js --ios",
+    "web": "node scripts/start-expo.js --web"
   },
   "dependencies": {
     "@expo-google-fonts/archivo": "^0.4.2",
     "@expo/ngrok": "^4.1.3",
     "@expo/vector-icons": "^15.0.2",
+    "@react-native-community/datetimepicker": "9.1.0",
+    "@react-native-google-signin/google-signin": "^16.1.5",
+    "axios": "^1.20.0",
     "expo": "~57.0.0",
+    "expo-dev-client": "~57.0.20",
     "expo-font": "~57.0.4",
     "expo-linear-gradient": "~57.0.2",
     "expo-linking": "~57.0.9",
     "expo-router": "~57.0.0",
+    "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "lucide-react-native": "^1.45.0",
     "react": "19.2.3",
@@ -24,7 +29,8 @@
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-svg": "15.15.4"
+    "react-native-svg": "15.15.4",
+    "react-native-web": "^0.21.2"
   },
   "private": true
 }
