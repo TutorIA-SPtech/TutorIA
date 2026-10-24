@@ -44,3 +44,19 @@ export async function requestPasswordRecovery(email) {
     data: { email: email.trim() },
   });
 }
+
+export async function verifyPasswordToken(email, token) {
+  await apiRequest('/api/v1/auth/password/verify', {
+    method: 'POST',
+    authenticated: false,
+    data: { email: email.trim(), token },
+  });
+}
+
+export async function resetPassword({ email, token, newPassword }) {
+  await apiRequest('/api/v1/auth/password/reset', {
+    method: 'POST',
+    authenticated: false,
+    data: { email: email.trim(), token, newPassword },
+  });
+}

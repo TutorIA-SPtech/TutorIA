@@ -10,7 +10,7 @@ import {
     ScrollView,
     Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../../components/Button';
@@ -23,6 +23,7 @@ import { validateLogin } from '../../utils/authValidation';
 
 export default function LoginScreen() {
     const router = useRouter();
+    const { senhaRedefinida } = useLocalSearchParams();
     const { signIn } = useAuth();
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
@@ -142,6 +143,13 @@ export default function LoginScreen() {
                                 <Text style={styles.subtitle}>Sua trilha continua de onde parou.</Text>
                             </View>
                         </View>
+
+                        {senhaRedefinida ? (
+                            <View style={styles.successCard} accessibilityLiveRegion="polite">
+                                <Ionicons name="checkmark-circle" size={18} color="#57DDA9" />
+                                <Text style={styles.successText}>Senha alterada. Entre com a nova senha.</Text>
+                            </View>
+                        ) : null}
 
                         {/* Formulário */}
                         <View style={styles.form}>
@@ -306,6 +314,23 @@ const styles = StyleSheet.create({
         fontSize: 13,
         marginTop: 5,
         lineHeight: 18,
+    },
+    successCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        backgroundColor: 'rgba(87, 221, 169, 0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(87, 221, 169, 0.35)',
+        borderRadius: 16,
+        padding: 14,
+        marginBottom: 24,
+    },
+    successText: {
+        color: '#57DDA9',
+        fontSize: 13,
+        fontWeight: 'bold',
+        flex: 1,
     },
     form: {
         gap: 24,

@@ -7,13 +7,16 @@ const fieldMessages = {
   name: 'Confira o nome informado (obrigatório, até 120 caracteres).',
   email: 'Informe um e-mail válido.',
   password: 'A senha é obrigatória e deve ter entre 8 e 72 caracteres.',
+  newPassword: 'A senha deve ter entre 8 e 72 caracteres.',
+  token: 'Informe o código recebido por e-mail.',
 };
 
 export class ApiError extends Error {
-  constructor(message, fieldErrors = {}) {
+  constructor(message, fieldErrors = {}, code = null) {
     super(message);
     this.name = 'ApiError';
     this.fieldErrors = fieldErrors;
+    this.code = code;
   }
 }
 
@@ -34,7 +37,11 @@ function getApiError(status, problem, unauthorizedMessage) {
   if (problem?.code === 'EMAIL_ALREADY_REGISTERED') {
     return new ApiError('Este e-mail já está cadastrado.', {
       email: 'Este e-mail já está cadastrado.',
-    });
+    }, problem.code);
+  }
+
+  if (problem?.code === 'INVALID_RESET_TOKEN') {
+    return new ApiError('Código inválido ou expirado.', {}, problem.code);
   }
 
   if (status === 401) {

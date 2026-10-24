@@ -19,8 +19,6 @@ import { requestPasswordRecovery } from '../../services/authApi';
 import { ApiError } from '../../services/apiClient';
 import { validateEmail } from '../../utils/authValidation';
 
-// Recuperar senha - passo 1 de 3: informar o e-mail.
-// Depois vem verify-code (passo 2) e new-password (passo 3).
 
 export default function RecuperarSenhaScreen() {
     const router = useRouter();
@@ -93,7 +91,7 @@ export default function RecuperarSenhaScreen() {
                         </View>
 
                         <Text style={styles.paragraph}>
-                            Digite o e-mail da sua conta. Envio um código de 6 dígitos, válido por 30 minutos.
+                            Digite o e-mail da sua conta. Envio um código de 6 dígitos, válido por 15 minutos.
                         </Text>
 
                         {/* Formulário */}

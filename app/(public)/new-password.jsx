@@ -9,11 +9,15 @@ import {
     Platform,
     ScrollView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../../components/Button';
 import DotGridBackground from '../../components/DotGridBackground';
+import { resetPassword } from '../../services/authApi';
+import { ApiError } from '../../services/apiClient';
+
+const MAX_SENHA = 72;
 
 const REGRAS = [
     { id: 'tamanho', texto: 'Pelo menos 8 caracteres', ok: (s) => s.length >= 8 },
@@ -38,10 +42,14 @@ const NIVEIS = [
 
 export default function NovaSenhaScreen() {
     const router = useRouter();
+    const { email, codigo } = useLocalSearchParams();
     const [senha, setSenha] = useState('');
     const [confirmar, setConfirmar] = useState('');
     const [verSenha, setVerSenha] = useState(false);
     const [focado, setFocado] = useState(null);
+    const [enviando, setEnviando] = useState(false);
+    const [erro, setErro] = useState('');
+    const [tokenExpirado, setTokenExpirado] = useState(false);
 
     const nivel = NIVEIS[forca(senha)];
     const regrasOk = REGRAS.every((r) => r.ok(senha));
@@ -49,9 +57,22 @@ export default function NovaSenhaScreen() {
     const naoCoincidem = confirmar.length > 0 && confirmar !== senha;
     const podeSalvar = regrasOk && coincidem;
 
-    function handleSalvar() {
-        if (!podeSalvar) return;
-        router.replace('/inicio');
+    async function handleSalvar() {
+        if (!podeSalvar || enviando) return;
+        setEnviando(true);
+        setErro('');
+        setTokenExpirado(false);
+        try {
+            await resetPassword({ email, token: codigo, newPassword: senha });
+            router.dismissTo({ pathname: '/login', params: { senhaRedefinida: '1' } });
+        } catch (error) {
+            setTokenExpirado(error instanceof ApiError && error.code === 'INVALID_RESET_TOKEN');
+            setErro(error instanceof ApiError
+                ? error.fieldErrors.newPassword || error.message
+                : 'Não foi possível salvar a nova senha. Tente novamente.');
+        } finally {
+            setEnviando(false);
+        }
     }
 
     return (
@@ -104,6 +125,8 @@ export default function NovaSenhaScreen() {
                                     style={styles.inputText}
                                     value={senha}
                                     onChangeText={setSenha}
+                                    maxLength={MAX_SENHA}
+                                    editable={!enviando}
                                     secureTextEntry={!verSenha}
                                     autoCapitalize="none"
                                     autoComplete="new-password"
@@ -158,6 +181,8 @@ export default function NovaSenhaScreen() {
                                 ]}
                                 value={confirmar}
                                 onChangeText={setConfirmar}
+                                maxLength={MAX_SENHA}
+                                editable={!enviando}
                                 secureTextEntry={!verSenha}
                                 autoCapitalize="none"
                                 onFocus={() => setFocado('confirmar')}
@@ -170,13 +195,29 @@ export default function NovaSenhaScreen() {
                             {naoCoincidem && <Text style={styles.errorText}>As senhas não coincidem</Text>}
                         </View>
 
+                        {!!erro && (
+                            <View style={styles.formError}>
+                                <Text style={styles.errorText} accessibilityRole="alert">{erro}</Text>
+                                {tokenExpirado && (
+                                    <TouchableOpacity onPress={() => router.dismissTo('/recover-password')}>
+                                        <Text style={styles.linkText}>Pedir novo código</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        )}
+
                         <View style={[styles.buttonWrap, !podeSalvar && styles.disabled]}>
-                            <PrimaryButton title="Salvar nova senha" onPress={handleSalvar} />
+                            <PrimaryButton
+                                title="Salvar nova senha"
+                                onPress={handleSalvar}
+                                loading={enviando}
+                                disabled={!podeSalvar}
+                            />
                         </View>
                     </View>
 
                     <Text style={styles.footerNote}>
-                        Ao salvar, você entra direto no app e as outras sessões abertas são encerradas.
+                        Depois de salvar, entre no app com a nova senha.
                     </Text>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -227,6 +268,8 @@ const styles = StyleSheet.create({
     ruleTextOff: { color: '#8A91A6' },
     okText: { color: '#57DDA9', fontSize: 12 },
     errorText: { color: '#FF7A59', fontSize: 12 },
+    formError: { gap: 6, marginBottom: 14 },
+    linkText: { color: '#9FA8FF', fontSize: 13, fontWeight: 'bold' },
     buttonWrap: { width: '100%', marginTop: 6 },
     disabled: { opacity: 0.45 },
     footerNote: { color: '#5C668A', fontSize: 12, lineHeight: 18, paddingTop: 24 },

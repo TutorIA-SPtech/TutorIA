@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
-import { Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
+import { useMensagem } from '../components/CaixaMensagem';
 import { signOutGoogle } from '../services/googleAuth';
 
 const TITULO_SAIDA = 'Sair da conta?';
@@ -11,6 +11,7 @@ const MENSAGEM_SAIDA = 'Você voltará para a tela de entrada. Seu progresso sal
 export function useLogout() {
   const router = useRouter();
   const { signOut } = useAuth();
+  const { mostrarMensagem, confirmar } = useMensagem();
   const saidaEmAndamento = useRef(false);
 
   const logout = useCallback(async () => {
@@ -30,26 +31,23 @@ export function useLogout() {
       }
       router.replace('/welcome');
     } catch {
-      Alert.alert('Não foi possível sair', 'Tente novamente.');
+      mostrarMensagem({ tipo: 'erro', titulo: 'Não foi possível sair', mensagem: 'Tente novamente.' });
     } finally {
       saidaEmAndamento.current = false;
     }
-  }, [router, signOut]);
+  }, [router, signOut, mostrarMensagem]);
 
-  const confirmarSaida = useCallback(() => {
-    // Alert.alert não exibe nada na web.
-    if (Platform.OS === 'web') {
-      if (window.confirm(`${TITULO_SAIDA}\n\n${MENSAGEM_SAIDA}`)) {
-        logout();
-      }
-      return;
+  const confirmarSaida = useCallback(async () => {
+    const confirmou = await confirmar({
+      titulo: TITULO_SAIDA,
+      mensagem: MENSAGEM_SAIDA,
+      textoConfirmar: 'Sair',
+      destrutivo: true,
+    });
+    if (confirmou) {
+      logout();
     }
-
-    Alert.alert(TITULO_SAIDA, MENSAGEM_SAIDA, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: logout },
-    ]);
-  }, [logout]);
+  }, [confirmar, logout]);
 
   return { logout, confirmarSaida };
 }

@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../../components/Button';
 import DotGridBackground from '../../components/DotGridBackground';
+import { requestPasswordRecovery, verifyPasswordToken } from '../../services/authApi';
+import { ApiError } from '../../services/apiClient';
 
 const DIGITOS = 6;
 const SEGUNDOS_REENVIO = 42;
@@ -25,6 +27,8 @@ export default function VerificarCodigoScreen() {
     const [codigo, setCodigo] = useState(Array(DIGITOS).fill(''));
     const [focado, setFocado] = useState(0);
     const [erro, setErro] = useState('');
+    const [erroDeCodigo, setErroDeCodigo] = useState(false);
+    const [enviando, setEnviando] = useState(false);
     const [tentativas, setTentativas] = useState(0);
     const [contagem, setContagem] = useState(SEGUNDOS_REENVIO);
     const caixas = useRef([]);
@@ -65,18 +69,46 @@ export default function VerificarCodigoScreen() {
         }
     }
 
-    function handleConfirmar() {
-        if (!completo || expirou) return;
-        router.push({ pathname: '/new-password', params: { email, codigo: codigo.join('') } });
+    function mostrarErro(error, mensagemPadrao) {
+        const invalido = error instanceof ApiError && error.code === 'INVALID_RESET_TOKEN';
+        setErroDeCodigo(invalido);
+        setErro(error instanceof ApiError ? error.message : mensagemPadrao);
+        return invalido;
     }
 
-    function handleReenviar() {
-        if (contagem > 0) return;
-        setCodigo(Array(DIGITOS).fill(''));
-        setTentativas(0);
+    async function handleConfirmar() {
+        if (!completo || expirou || enviando) return;
+        const token = codigo.join('');
+        setEnviando(true);
+        try {
+            await verifyPasswordToken(email, token);
+            router.push({ pathname: '/new-password', params: { email, codigo: token } });
+        } catch (error) {
+            if (mostrarErro(error, 'Não foi possível verificar o código. Tente novamente.')) {
+                setTentativas((t) => t + 1);
+                setCodigo(Array(DIGITOS).fill(''));
+                caixas.current[0]?.focus();
+            }
+        } finally {
+            setEnviando(false);
+        }
+    }
+
+    async function handleReenviar() {
+        if (contagem > 0 || enviando) return;
+        setEnviando(true);
         setErro('');
-        setContagem(SEGUNDOS_REENVIO);
-        caixas.current[0]?.focus();
+        try {
+            await requestPasswordRecovery(email);
+            setCodigo(Array(DIGITOS).fill(''));
+            setTentativas(0);
+            setContagem(SEGUNDOS_REENVIO);
+            caixas.current[0]?.focus();
+        } catch (error) {
+            mostrarErro(error, 'Não foi possível reenviar o código. Tente novamente.');
+        } finally {
+            setEnviando(false);
+        }
     }
 
     return (
@@ -118,7 +150,7 @@ export default function VerificarCodigoScreen() {
                             </View>
                             <View style={styles.headingTextWrap}>
                                 <Text style={styles.title}>Confira seu e-mail</Text>
-                                <Text style={styles.subtitle}>O código vale por 30 minutos.</Text>
+                                <Text style={styles.subtitle}>O código vale por 15 minutos.</Text>
                             </View>
                         </View>
 
@@ -136,7 +168,7 @@ export default function VerificarCodigoScreen() {
                                     style={[
                                         styles.codeBox,
                                         focado === i && styles.inputActive,
-                                        !!erro && styles.inputError,
+                                        erroDeCodigo && !!erro && styles.inputError,
                                     ]}
                                     value={d}
                                     onChangeText={(t) => digitar(t, i)}
@@ -147,14 +179,14 @@ export default function VerificarCodigoScreen() {
                                     autoComplete="sms-otp"
                                     maxLength={i === 0 ? DIGITOS : 1}
                                     autoFocus={i === 0}
-                                    editable={!expirou}
+                                    editable={!expirou && !enviando}
                                     selectTextOnFocus
                                 />
                             ))}
                         </View>
-                        {!!erro && (
-                            <Text style={styles.errorText}>
-                                {erro} Restam {MAX_TENTATIVAS - tentativas} tentativas.
+                        {!!erro && !(erroDeCodigo && expirou) && (
+                            <Text style={styles.errorText} accessibilityRole="alert">
+                                {erroDeCodigo ? `${erro} Restam ${MAX_TENTATIVAS - tentativas} tentativas.` : erro}
                             </Text>
                         )}
                         {expirou && (
@@ -165,7 +197,7 @@ export default function VerificarCodigoScreen() {
                             <TouchableOpacity
                                 style={[styles.pill, contagem > 0 && styles.pillAccent]}
                                 onPress={handleReenviar}
-                                disabled={contagem > 0}
+                                disabled={contagem > 0 || enviando}
                             >
                                 <Text style={[styles.pillText, contagem > 0 && styles.pillTextAccent]}>
                                     {contagem > 0 ? `Reenviar em 0:${String(contagem).padStart(2, '0')}` : 'Reenviar código'}
@@ -177,7 +209,12 @@ export default function VerificarCodigoScreen() {
                         </View>
 
                         <View style={[styles.buttonWrap, (!completo || expirou) && styles.disabled]}>
-                            <PrimaryButton title="Confirmar código" onPress={handleConfirmar} />
+                            <PrimaryButton
+                                title="Confirmar código"
+                                onPress={handleConfirmar}
+                                loading={enviando}
+                                disabled={!completo || expirou}
+                            />
                         </View>
 
                         <View style={styles.infoCard}>
