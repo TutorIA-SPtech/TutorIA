@@ -44,6 +44,10 @@ function getApiError(status, problem, unauthorizedMessage) {
     return new ApiError('Código inválido ou expirado.', {}, problem.code);
   }
 
+  if (status === 429) {
+    return new ApiError('Você atingiu o limite de uso da IA de hoje. Renova às 00:00.', {}, 'AI_LIMIT_EXCEEDED');
+  }
+
   if (status === 401) {
     return new ApiError(unauthorizedMessage || 'E-mail ou senha incorretos.');
   }

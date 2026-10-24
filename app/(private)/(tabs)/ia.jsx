@@ -1,14 +1,14 @@
-import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import {
-  COR, F, txt, tela, Fundo, Cabecalho, Tuti, Icone, IconeCaixa, Caixa, Contorno, Chip, Botao, Enviar,
+  COR, F, txt, tela, Fundo, Cabecalho, Tuti, Icone, IconeCaixa, Contorno, Chip, Enviar,
 } from '../../../components/TutoriaUI';
-
-const PEDIDOS_POR_DIA = 8;
-const PEDIDOS_JA_USADOS = 3;
+import { ApiError } from '../../../services/apiClient';
+import { getAiUsage } from '../../../services/aiUsageApi';
+import { askTutor } from '../../../services/tutorApi';
 
 const SUGESTOES = [
   { texto: 'Questionário intermediário sobre funções', icone: 'lista', cor: COR.lilas, fundo: 'rgba(157,169,255,0.15)' },
@@ -17,43 +17,56 @@ const SUGESTOES = [
   { texto: 'Faça perguntas sobre o meu anexo', icone: 'arquivo', cor: COR.lilas, fundo: 'rgba(157,169,255,0.15)' },
 ];
 
-const SIMULADO = {
-  titulo: 'Simulado · pontos fracos',
-  assuntos: [
-    { nome: 'Reagente limitante', questoes: 6, dominio: 42 },
-    { nome: 'Interpretação de gráficos', questoes: 5, dominio: 47 },
-    { nome: 'Funções', questoes: 4, dominio: 51 },
-  ],
-  duracao: '25 min',
-  nivel: 'nível médio',
-};
-
-const REFINOS = ['Mais fácil', 'Mais questões', 'Trocar assunto'];
-
-function responder(pedido) {
-  const t = pedido.toLowerCase();
-  if (t.includes('simulado') || t.includes('question') || t.includes('fraco') || REFINOS.some((r) => t === r.toLowerCase())) {
-    const total = SIMULADO.assuntos.reduce((soma, a) => soma + a.questoes, 0);
-    return { autor: 'tuti', texto: `Montei ${total} questões com os três assuntos de menor domínio no seu mapa:`, simulado: SIMULADO };
-  }
-  return { autor: 'tuti', texto: 'Resposta de exemplo. Quando a API estiver ligada, a explicação do Tuti aparece aqui.' };
-}
-
 export default function ChatIAScreen() {
   const rolagem = useRef(null);
   const [mensagens, setMensagens] = useState([]);
   const [texto, setTexto] = useState('');
-  const [usados, setUsados] = useState(PEDIDOS_JA_USADOS);
-  const [anexo, setAnexo] = useState('Resumo_quimica');
+  const [cota, setCota] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+  const [anexo, setAnexo] = useState(null);
 
-  const noLimite = usados >= PEDIDOS_POR_DIA;
+  useFocusEffect(
+    useCallback(() => {
+      let montado = true;
 
-  const enviar = (pedido) => {
+      getAiUsage()
+        .then((uso) => {
+          const pedidosLivres = uso?.categories?.find((c) => c.category === 'FREE_REQUEST');
+          if (montado && pedidosLivres) {
+            setCota({ usados: pedidosLivres.used, limite: pedidosLivres.limit });
+          }
+        })
+        .catch(() => {
+        });
+
+      return () => {
+        montado = false;
+      };
+    }, []),
+  );
+
+  const noLimite = cota ? cota.usados >= cota.limite : false;
+
+  const enviar = async (pedido) => {
     const t = (pedido ?? texto).trim();
-    if (!t || noLimite) return;
-    setMensagens((m) => [...m, { autor: 'aluno', texto: t }, responder(t)]);
-    setUsados((u) => u + 1);
+    if (!t || noLimite || enviando) return;
+
+    setMensagens((m) => [...m, { autor: 'aluno', texto: t }]);
     setTexto('');
+    setEnviando(true);
+    try {
+      const resposta = await askTutor(t);
+      setMensagens((m) => [...m, { autor: 'tuti', texto: resposta }]);
+      setCota((c) => (c ? { ...c, usados: c.usados + 1 } : c));
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'AI_LIMIT_EXCEEDED') {
+        setCota((c) => (c ? { ...c, usados: c.limite } : c));
+      }
+      const mensagemErro = error instanceof ApiError ? error.message : 'O Tuti não conseguiu responder agora. Tente novamente.';
+      setMensagens((m) => [...m, { autor: 'tuti', texto: mensagemErro, erro: true }]);
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -62,7 +75,7 @@ export default function ChatIAScreen() {
       <Fundo glow={mensagens.length === 0} />
       <Cabecalho
         titulo={mensagens.length === 0 ? 'Pedir ao Tuti' : 'Pedido atendido'}
-        selo={`${usados} / ${PEDIDOS_POR_DIA} hoje`}
+        selo={cota ? `${cota.usados} / ${cota.limite} hoje` : undefined}
       />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -102,59 +115,19 @@ export default function ChatIAScreen() {
                   <Text style={e.balaoTexto}>{m.texto}</Text>
                 </View>
               ) : (
-                <View key={i} style={{ gap: 12 }}>
-                  <View style={[tela.linha, { gap: 9 }]}>
-                    <Tuti tam={30} antena={false} />
-                    <Text style={e.respostaTexto}>{m.texto}</Text>
-                  </View>
-
-                  {m.simulado && (
-                    <>
-                      <Caixa tipo="cardp" style={{ gap: 10 }}>
-                        <Text style={e.simuladoTitulo}>{m.simulado.titulo}</Text>
-                        <View style={{ gap: 8 }}>
-                          {m.simulado.assuntos.map((a) => (
-                            <View key={a.nome} style={tela.linha}>
-                              <Text style={e.assunto}>{a.nome}</Text>
-                              <Text style={[txt.mn, { marginLeft: 'auto', fontSize: 10, color: a.dominio < 50 ? COR.coral : COR.apagado }]}>
-                                {a.questoes} q · {a.dominio}%
-                              </Text>
-                            </View>
-                          ))}
-                        </View>
-                        <View style={[tela.linha, { gap: 6 }]}>
-                          <Chip titulo={m.simulado.duracao} style={e.chipCheio} />
-                          <Chip titulo={m.simulado.nivel} style={e.chipCheio} />
-                        </View>
-                        {/* TODO: abrir o simulado */}
-                        <Botao
-                          titulo="Começar simulado"
-                          seta
-                          onPress={() => {}}
-                          estiloInterno={{ paddingVertical: 13, paddingHorizontal: 15 }}
-                          estiloTexto={{ fontSize: 13 }}
-                        />
-                      </Caixa>
-
-                      <Contorno style={{ gap: 7, padding: 12 }}>
-                        <Text style={txt.lbl}>DE ONDE VIERAM</Text>
-                        <Text style={[txt.tx, { fontSize: 10.5, lineHeight: 16.3 }]}>
-                          Banco oficial ENEM, FUVEST e UNESP. Nenhuma questão foi inventada — eu apenas selecionei e ordenei.
-                        </Text>
-                      </Contorno>
-
-                      {i === mensagens.length - 1 && (
-                        <View style={[tela.linha, { gap: 6, flexWrap: 'wrap' }]}>
-                          {REFINOS.map((r) => (
-                            <Chip key={r} titulo={r} onPress={() => enviar(r)} />
-                          ))}
-                        </View>
-                      )}
-                    </>
-                  )}
+                <View key={i} style={[tela.linha, { gap: 9 }]}>
+                  <Tuti tam={30} antena={false} />
+                  <Text style={[e.respostaTexto, m.erro && { color: COR.coral }]}>{m.texto}</Text>
                 </View>
               ),
             )
+          )}
+
+          {enviando && (
+            <View style={[tela.linha, { gap: 9 }]}>
+              <Tuti tam={30} antena={false} />
+              <ActivityIndicator color={COR.lilas} />
+            </View>
           )}
 
           {noLimite && (
@@ -179,7 +152,7 @@ export default function ChatIAScreen() {
             </Pressable>
           </View>
 
-          <View style={[e.campo, noLimite && { opacity: 0.45 }]}>
+          <View style={[e.campo, (noLimite || enviando) && { opacity: 0.45 }]}>
             <TextInput
               style={e.campoTexto}
               value={texto}
@@ -188,7 +161,7 @@ export default function ChatIAScreen() {
               placeholderTextColor={COR.apagado}
               onSubmitEditing={() => enviar()}
               returnKeyType="send"
-              editable={!noLimite}
+              editable={!noLimite && !enviando}
             />
             {/* TODO: gravar audio */}
             <Pressable onPress={() => {}} hitSlop={8}>
@@ -212,9 +185,7 @@ const e = StyleSheet.create({
   },
   balaoTexto: { color: COR.tinta, fontSize: 11.5, lineHeight: 16.7, fontFamily: F.m },
   respostaTexto: { flex: 1, color: COR.tinta, fontSize: 11.5, lineHeight: 17.3, fontFamily: F.r },
-  simuladoTitulo: { color: COR.tinta, fontSize: 14, fontFamily: F.b },
   assunto: { color: COR.tinta, fontSize: 11, fontFamily: F.m },
-  chipCheio: { backgroundColor: 'rgba(255,255,255,0.07)' },
   rodape: { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 14, gap: 10 },
   verLimite: { marginLeft: 'auto', paddingVertical: 6, paddingHorizontal: 11, borderRadius: 99, backgroundColor: COR.superficie },
   verLimiteTexto: { color: COR.lilas, fontSize: 10.5, fontFamily: F.b },
