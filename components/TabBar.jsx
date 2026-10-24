@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 // "name" é o nome do arquivo dentro de app/(private)/(tabs)/.
 // Abas sem arquivo ainda ficam visíveis, mas sem ação, até a tela ser criada.
 const ABAS = [
-  { name: 'home', label: 'Início', icon: 'home-outline' },
+  { name: 'index', label: 'Início', icon: 'home-outline' },
   { name: 'plano', label: 'Plano', icon: 'book-outline' },
   { name: 'ia', label: 'IA', icon: 'star-outline' },
   { name: 'progresso', label: 'Progresso', icon: 'stats-chart-outline' },

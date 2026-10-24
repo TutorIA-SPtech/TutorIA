@@ -110,7 +110,7 @@ export default function LoginScreen() {
                         </View>
 
                         {/* Botão principal (reaproveitando o componente já existente) */}
-                        <PrimaryButton title="Entrar" onPress={() => { }} />
+                        <PrimaryButton title="Entrar" onPress={() => router.replace('/tabs/')} />
 
                         {/* Divisor */}
                         <View style={styles.dividerContainer}>
