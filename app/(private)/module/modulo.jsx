@@ -4,9 +4,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import PrimaryButton from '../../components/Button';
-import DotGridBackground from '../../components/DotGridBackground';
-import { styles } from '../../styles/modulo';
+import PrimaryButton from '../../../components/Button';
+import DotGridBackground from '../../../components/DotGridBackground';
+import { styles } from '../../../styles/module/modulo';
 
 // Dados de exemplo enquanto não há integração com a API
 const MODULO = {
@@ -67,6 +67,8 @@ const IconeTopico = ({ topico }) => {
 const TopicoItem = ({ topico }) => {
   const atual = topico.status === 'atual';
 
+  const router = useRouter();
+
   return (
     <TouchableOpacity
       style={[
@@ -76,7 +78,10 @@ const TopicoItem = ({ topico }) => {
         topico.status === 'avaliacao' && styles.topicoAvaliacao,
       ]}
       activeOpacity={0.8}
-      onPress={() => console.log(`Abrir tópico ${topico.id}`)}
+      onPress={() => router.push({
+              pathname: '/(private)/module/questao',
+              params: { index: 0 },
+            })}
     >
       <View style={styles.topicoLinha}>
         <IconeTopico topico={topico} />
@@ -158,7 +163,12 @@ export default function ModuloScreen() {
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <PrimaryButton
           title="Continuar de onde parei"
-          onPress={() => router.push('/questao')}
+          onPress={() =>
+            router.push({
+              pathname: '/(private)/module/questao',
+              params: { index: 0 },
+            })
+          }
         />
       </View>
     </View>

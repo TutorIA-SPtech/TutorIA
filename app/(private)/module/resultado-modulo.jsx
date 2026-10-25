@@ -4,10 +4,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import PrimaryButton from '../../components/Button';
-import DotGridBackground from '../../components/DotGridBackground';
-import AnimatedProgressBar from '../../components/AnimatedProgressBar';
-import { styles } from '../../styles/resultado-modulo';
+import PrimaryButton from '../../../components/Button';
+import DotGridBackground from '../../../components/DotGridBackground';
+import AnimatedProgressBar from '../../../components/AnimatedProgressBar';
+import { styles } from '../../../styles/module/resultado-modulo';
 
 // Dados de exemplo enquanto não há integração com a API
 const RESULTADO = {
@@ -132,7 +132,10 @@ export default function ResultadoModuloScreen() {
 
       {/* Botões fixos no rodapé */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <PrimaryButton title="Ver plano atualizado" onPress={() => router.push('/plano-atualizado')} />
+        <PrimaryButton
+          title="Ver plano atualizado"
+          onPress={() => router.push('/(private)/module/plano-atualizado')}
+        />
         <TouchableOpacity
           style={styles.secondaryButton}
           activeOpacity={0.8}

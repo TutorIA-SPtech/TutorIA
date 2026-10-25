@@ -1,38 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { BackHandler } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import PrimaryButton from '../../components/Button';
-import DotGridBackground from '../../components/DotGridBackground';
-import AnimatedProgressBar from '../../components/AnimatedProgressBar';
-import { styles } from '../../styles/resposta-erro';
-
-// Dados de exemplo enquanto não há integração com a API
-const RESPOSTA = {
-  questaoAtual: 4,
-  totalQuestoes: 6,
-  marcada: { letra: 'C', texto: '36 g' },
-  tempoSegundos: 41,
-  porqueErrou: {
-    texto:
-      'Você somou as massas dos reagentes (4 + 32). Só valeria se os dois fossem consumidos — o O₂ está em excesso: sobram ',
-    destaque: '4 g.',
-  },
-  correta: {
-    letra: 'B',
-    texto: '32 g de água',
-    explicacao: '2 mol de H₂ reagem com 1 mol de O₂: os 4 g de H₂ consomem só 32 g de O₂.',
-  },
-  conteudo: {
-    texto:
-      'Limitante é o reagente que acaba primeiro. Faltou converter massa em mol antes de comparar.',
-    mapaAntes: 48,
-    mapaDepois: 42,
-    parecidas: 2,
-  },
-};
+import PrimaryButton from '../../../components/Button';
+import DotGridBackground from '../../../components/DotGridBackground';
+import AnimatedProgressBar from '../../../components/AnimatedProgressBar';
+import { styles } from '../../../styles/module/resposta-erro';
 
 const TEMAS = {
   coral: {
@@ -74,6 +50,19 @@ const CardSecao = ({ numero, titulo, tema, children }) => {
 export default function RespostaErroScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { payload } = useLocalSearchParams();
+  const payloadString = Array.isArray(payload) ? payload[0] : payload;
+  const info = JSON.parse(payloadString || '{}');
+
+  useEffect(() => {
+    const voltarAoResumo = () => {
+      router.replace('/(private)/module/modulo');
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', voltarAoResumo);
+    return () => subscription.remove();
+  }, [router]);
 
   return (
     <View style={styles.container}>
@@ -100,11 +89,14 @@ export default function RespostaErroScreen() {
       >
         {/* Cabeçalho */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => router.replace('/(private)/module/modulo')}
+          >
             <Ionicons name="close" size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            Questão {RESPOSTA.questaoAtual} / {RESPOSTA.totalQuestoes}
+            Questão {info.questaoAtual} / {info.totalQuestoes}
           </Text>
         </View>
 
@@ -123,9 +115,9 @@ export default function RespostaErroScreen() {
           </View>
           <View style={styles.resultadoTextWrap}>
             <Text style={styles.resultadoTitulo}>
-              Você marcou {RESPOSTA.marcada.letra} · {RESPOSTA.marcada.texto}
+              Você marcou {info.opcaoMarcada?.letra} · {info.opcaoMarcada?.texto}
             </Text>
-            <Text style={styles.resultadoSub}>Incorreta · {RESPOSTA.tempoSegundos} s</Text>
+            <Text style={styles.resultadoSub}>Incorreta</Text>
           </View>
         </View>
 
@@ -133,32 +125,31 @@ export default function RespostaErroScreen() {
         <View style={styles.secoesList}>
           <CardSecao numero={1} titulo="POR QUE ERROU" tema="coral">
             <Text style={styles.secaoTexto}>
-              {RESPOSTA.porqueErrou.texto}
-              <Text style={styles.secaoDestaqueErro}>{RESPOSTA.porqueErrou.destaque}</Text>
+              {info.explicacao}
             </Text>
           </CardSecao>
 
           <CardSecao numero={2} titulo="A CORRETA" tema="verde">
             <View style={styles.corretaRow}>
               <View style={styles.corretaLetra}>
-                <Text style={styles.corretaLetraTexto}>{RESPOSTA.correta.letra}</Text>
+                <Text style={styles.corretaLetraTexto}>{info.opcaoCorreta?.letra}</Text>
               </View>
-              <Text style={styles.corretaTitulo}>{RESPOSTA.correta.texto}</Text>
+              <Text style={styles.corretaTitulo}>{info.opcaoCorreta?.texto}</Text>
             </View>
-            <Text style={styles.secaoTexto}>{RESPOSTA.correta.explicacao}</Text>
+            <Text style={styles.secaoTexto}>{info.teoriaFaltante}</Text>
           </CardSecao>
 
           <CardSecao numero={3} titulo="O CONTEÚDO" tema="lavanda">
-            <Text style={styles.conteudoTexto}>{RESPOSTA.conteudo.texto}</Text>
+            <Text style={styles.conteudoTexto}>{info.teoriaFaltante}</Text>
 
             <View style={styles.mapaHeader}>
               <Text style={styles.mapaLabel}>SEU MAPA</Text>
               <Text style={styles.mapaValorErro}>
-                {RESPOSTA.conteudo.mapaAntes}% → {RESPOSTA.conteudo.mapaDepois}%
+                48% → 42%
               </Text>
             </View>
             <AnimatedProgressBar
-              targetPercentage={RESPOSTA.conteudo.mapaDepois}
+              targetPercentage={42}
               color="#FF8A65"
               height={6}
             />
@@ -176,7 +167,7 @@ export default function RespostaErroScreen() {
                 activeOpacity={0.8}
                 onPress={() => console.log('Questões parecidas')}
               >
-                <Text style={styles.pillText}>{RESPOSTA.conteudo.parecidas} parecidas</Text>
+                <Text style={styles.pillText}>2 parecidas</Text>
               </TouchableOpacity>
             </View>
           </CardSecao>
@@ -185,7 +176,17 @@ export default function RespostaErroScreen() {
 
       {/* Botão fixo no rodapé */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <PrimaryButton title="Próxima questão" onPress={() => console.log('Próxima questão')} />
+        <PrimaryButton
+          title="Próxima questão"
+          onPress={() =>
+            info.isUltimaQuestao
+              ? router.replace('/(private)/module/resultado-modulo')
+              : router.replace({
+                  pathname: '/(private)/module/questao',
+                  params: { index: info.proximoIndex },
+                })
+          }
+        />
       </View>
     </View>
   );

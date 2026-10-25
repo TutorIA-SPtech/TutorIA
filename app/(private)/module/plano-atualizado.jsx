@@ -1,12 +1,13 @@
 import React from 'react';
+import { useRouter } from 'expo-router';
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import PrimaryButton from '../../components/Button';
-import DotGridBackground from '../../components/DotGridBackground';
-import AnimatedProgressBar from '../../components/AnimatedProgressBar';
-import { styles } from '../../styles/plano-atualizado';
+import PrimaryButton from '../../../components/Button';
+import DotGridBackground from '../../../components/DotGridBackground';
+import AnimatedProgressBar from '../../../components/AnimatedProgressBar';
+import { styles } from '../../../styles/module/plano-atualizado';
 
 // Dados de exemplo enquanto não há integração com a API
 const PLANO = {
@@ -84,6 +85,7 @@ const CardMudanca = ({ mudanca }) => {
 };
 
 export default function PlanoAtualizadoScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { impacto } = PLANO;
 
@@ -115,7 +117,7 @@ export default function PlanoAtualizadoScreen() {
 
         <View style={styles.heroRow}>
           <Image
-            source={require('../../assets/tuti.png')}
+            source={require('../../../assets/tuti.png')}
             style={styles.mascote}
             resizeMode="contain"
           />
@@ -148,11 +150,14 @@ export default function PlanoAtualizadoScreen() {
 
       {/* Botões fixos no rodapé */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <PrimaryButton title="Aceitar mudanças" onPress={() => console.log('Aceitar mudanças')} />
+        <PrimaryButton
+          title="Aceitar mudanças"
+          onPress={() => router.replace('/(private)/tabs/plano')}
+        />
         <TouchableOpacity
           style={styles.secondaryButton}
           activeOpacity={0.8}
-          onPress={() => console.log('Manter plano atual')}
+          onPress={() => router.replace('/(private)/tabs/plano')}
         >
           <Text style={styles.secondaryButtonTexto}>Manter meu plano atual</Text>
         </TouchableOpacity>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +15,7 @@ const PLANO = {
   previsao: 'No ritmo atual você conclui 6 dias antes da prova.',
 };
 
-const MODULOS = [
+const MODULOS_INICIAIS = [
   { id: 1, titulo: 'Módulo 1 · Razão e proporção', status: 'concluido', acerto: 92 },
   { id: 2, titulo: 'Módulo 2 · Estequiometria', status: 'andamento', topicosConcluidos: 3, totalTopicos: 7 },
   { id: 3, titulo: 'Módulo 3 · Termoquímica', status: 'proximo', libera: 2 },
@@ -100,7 +100,7 @@ const ModuloItem = ({ modulo, ultimo }) => {
           <TouchableOpacity
             style={styles.moduloAtivoCard}
             activeOpacity={0.8}
-            onPress={() => router.push('/modulo')}
+            onPress={() => router.push('/(private)/module/modulo')}
           >
             <Text style={styles.moduloTitulo}>{modulo.titulo}</Text>
             <Text style={styles.moduloDetalhe}>{detalhe}</Text>
@@ -124,6 +124,7 @@ const ModuloItem = ({ modulo, ultimo }) => {
 
 export default function PlanoScreen() {
   const insets = useSafeAreaInsets();
+  const [modulos] = useState(MODULOS_INICIAIS);
 
   return (
     <View style={styles.container}>
@@ -172,8 +173,8 @@ export default function PlanoScreen() {
 
         {/* Módulos */}
         <View>
-          {MODULOS.map((modulo, index) => (
-            <ModuloItem key={modulo.id} modulo={modulo} ultimo={index === MODULOS.length - 1} />
+          {modulos.map((modulo, index) => (
+            <ModuloItem key={modulo.id} modulo={modulo} ultimo={index === modulos.length - 1} />
           ))}
         </View>
       </ScrollView>
