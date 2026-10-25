@@ -1,10 +1,15 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import { useLogout } from '../../../hooks/useLogout';
+import { ApiError } from '../../../services/apiClient';
+import { getStudyProfile, saveStudyProfile } from '../../../services/studyProfileApi';
+import { getStoredReminder, saveStoredReminder } from '../../../services/reminderStorage';
 
 const COR = {
   fundo: '#0A0D14',
@@ -13,23 +18,32 @@ const COR = {
   linha: 'rgba(255,255,255,0.09)',
   roxo: '#9DA9FF',
   lilas: '#C9B6FF',
+  coral: '#FF7A59',
   superficie: '#151C2B',
 };
 
 const GRADIENTE = ['#D6C6FF', '#7C8CFF'];
 const GRADIENTE_CHIP = ['#D3C2FF', '#8E9BFF'];
 
-const OPCOES_TEMPO = ['30 min', '1 h', '2 h', '3 h+'];
-
-const DIAS_DA_SEMANA = [
-  { id: 'seg', letra: 'S' },
-  { id: 'ter', letra: 'T' },
-  { id: 'qua', letra: 'Q' },
-  { id: 'qui', letra: 'Q' },
-  { id: 'sex', letra: 'S' },
-  { id: 'sab', letra: 'S' },
-  { id: 'dom', letra: 'D' },
+const OPCOES_TEMPO = [
+  { rotulo: '30 min', minutos: 30 },
+  { rotulo: '1 h', minutos: 60 },
+  { rotulo: '2 h', minutos: 120 },
+  { rotulo: '3 h+', minutos: 180 },
 ];
+
+// "api" é o valor de DayOfWeek esperado pelo back
+const DIAS_DA_SEMANA = [
+  { id: 'seg', letra: 'S', api: 'MONDAY' },
+  { id: 'ter', letra: 'T', api: 'TUESDAY' },
+  { id: 'qua', letra: 'Q', api: 'WEDNESDAY' },
+  { id: 'qui', letra: 'Q', api: 'THURSDAY' },
+  { id: 'sex', letra: 'S', api: 'FRIDAY' },
+  { id: 'sab', letra: 'S', api: 'SATURDAY' },
+  { id: 'dom', letra: 'D', api: 'SUNDAY' },
+];
+
+const HORARIO_VALIDO = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function formatarData(texto) {
   const digitos = texto.replace(/\D/g, '').slice(0, 8);
@@ -57,14 +71,154 @@ function calcularDiasRestantes(texto) {
   return dias > 0 ? dias : null;
 }
 
+// 'dd / mm / aaaa' -> 'aaaa-mm-dd' (LocalDate do back)
+function paraDataDaApi(texto) {
+  const [dia, mes, ano] = texto.replace(/\s/g, '').split('/');
+  return `${ano}-${mes}-${dia}`;
+}
+
+function deDataDaApi(data) {
+  const [ano, mes, dia] = data.split('-');
+  return `${dia} / ${mes} / ${ano}`;
+}
+
+function horarioParaDate(horario) {
+  const [horas, minutos] = horario.split(':').map(Number);
+  const data = new Date();
+  data.setHours(horas, minutos, 0, 0);
+  return data;
+}
+
+function dateParaHorario(data) {
+  return `${String(data.getHours()).padStart(2, '0')}:${String(data.getMinutes()).padStart(2, '0')}`;
+}
+
 export default function RotinaScreen() {
-  const [dataDaProva, setDataDaProva] = useState('08 / 11 / 2026');
-  const [tempoPorDia, setTempoPorDia] = useState('1 h');
+  const [dataDaProva, setDataDaProva] = useState('');
+  const [tempoPorDia, setTempoPorDia] = useState(60);
   const [diasEscolhidos, setDiasEscolhidos] = useState(['seg', 'ter', 'qua', 'qui', 'sex']);
   const [lembreteAtivo, setLembreteAtivo] = useState(true);
   const [horario, setHorario] = useState('19:00');
+  const [seletorAberto, setSeletorAberto] = useState(false);
+  const [cursoId, setCursoId] = useState(null);
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState('');
+  const salvamentoEmAndamento = useRef(false);
 
   const diasRestantes = calcularDiasRestantes(dataDaProva);
+  const { confirmarSaida } = useLogout();
+
+  useEffect(() => {
+    let montado = true;
+
+    async function carregarRotina() {
+      try {
+        const [perfil, lembrete] = await Promise.all([
+          getStudyProfile(),
+          getStoredReminder().catch(() => null),
+        ]);
+        if (!montado) return;
+
+        if (perfil) {
+          setDataDaProva(deDataDaApi(perfil.examDate));
+          if (OPCOES_TEMPO.some((opcao) => opcao.minutos === perfil.dailyMinutes)) {
+            setTempoPorDia(perfil.dailyMinutes);
+          }
+          setDiasEscolhidos(
+            DIAS_DA_SEMANA.filter((dia) => perfil.studyDays?.includes(dia.api)).map((dia) => dia.id),
+          );
+          // O PUT substitui o perfil inteiro: guardar o curso para não apagá-lo ao salvar.
+          setCursoId(perfil.targetCourse?.id ?? null);
+        }
+
+        if (lembrete) {
+          setLembreteAtivo(lembrete.ativo);
+          setHorario(lembrete.horario);
+        }
+      } catch (error) {
+        if (montado) {
+          setErro(error instanceof ApiError ? error.message : 'Não foi possível carregar sua rotina.');
+        }
+      } finally {
+        if (montado) setCarregando(false);
+      }
+    }
+
+    carregarRotina();
+    return () => {
+      montado = false;
+    };
+  }, []);
+
+  const alterarHorario = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: horarioParaDate(horario),
+        mode: 'time',
+        is24Hour: true,
+        onValueChange: (_evento, data) => setHorario(dateParaHorario(data)),
+      });
+      return;
+    }
+
+    // O datetimepicker não funciona na web
+    if (Platform.OS === 'web') {
+      const resposta = window.prompt('Horário do lembrete (HH:MM)', horario)?.trim();
+      if (resposta && HORARIO_VALIDO.test(resposta)) {
+        setHorario(resposta);
+      }
+      return;
+    }
+
+    // iOS: o seletor aparece dentro do card
+    setSeletorAberto(!seletorAberto);
+  };
+
+  const alternarLembrete = () => {
+    setLembreteAtivo(!lembreteAtivo);
+    setSeletorAberto(false);
+  };
+
+  const continuar = async () => {
+    if (salvamentoEmAndamento.current) return;
+
+    if (diasRestantes === null) {
+      setErro('Informe uma data de prova válida e futura.');
+      return;
+    }
+    if (diasEscolhidos.length === 0) {
+      setErro('Escolha pelo menos um dia da semana.');
+      return;
+    }
+
+    salvamentoEmAndamento.current = true;
+    setSalvando(true);
+    setErro('');
+    try {
+      await saveStudyProfile({
+        examDate: paraDataDaApi(dataDaProva),
+        dailyMinutes: tempoPorDia,
+        studyDays: DIAS_DA_SEMANA.filter((dia) => diasEscolhidos.includes(dia.id)).map((dia) => dia.api),
+        targetCourseId: cursoId,
+      });
+      await saveStoredReminder({ ativo: lembreteAtivo, horario });
+      router.push('/onboarding/convite');
+    } catch (error) {
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível salvar sua rotina. Tente novamente.');
+    } finally {
+      salvamentoEmAndamento.current = false;
+      setSalvando(false);
+    }
+  };
+
+  const voltar = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    confirmarSaida();
+  };
 
   const alternarDia = (id) => {
     if (diasEscolhidos.includes(id)) {
@@ -74,13 +228,22 @@ export default function RotinaScreen() {
     }
   };
 
+  if (carregando) {
+    return (
+      <SafeAreaView style={[styles.tela, styles.carregando]}>
+        <StatusBar style="light" />
+        <ActivityIndicator color={COR.roxo} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.tela}>
       <StatusBar style="light" />
 
       {/* Cabecalho */}
       <View style={styles.cabecalho}>
-        <Pressable onPress={() => router.back()} style={styles.voltar} hitSlop={10}>
+        <Pressable onPress={voltar} style={styles.voltar} hitSlop={10}>
           <Ionicons name="arrow-back" size={15} color={COR.apagado} />
         </Pressable>
         <Text style={styles.cabecalhoTitulo}>Sua rotina</Text>
@@ -133,26 +296,26 @@ export default function RotinaScreen() {
           <Text style={styles.rotulo}>TEMPO POR DIA</Text>
           <View style={styles.linha}>
             {OPCOES_TEMPO.map((opcao) => {
-              const selecionado = tempoPorDia === opcao;
+              const selecionado = tempoPorDia === opcao.minutos;
 
               if (selecionado) {
                 return (
-                  <Pressable key={opcao} onPress={() => setTempoPorDia(opcao)}>
+                  <Pressable key={opcao.minutos} onPress={() => setTempoPorDia(opcao.minutos)}>
                     <LinearGradient
                       colors={GRADIENTE_CHIP}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.chipCheio}
                     >
-                      <Text style={styles.chipCheioTexto}>{opcao}</Text>
+                      <Text style={styles.chipCheioTexto}>{opcao.rotulo}</Text>
                     </LinearGradient>
                   </Pressable>
                 );
               }
 
               return (
-                <Pressable key={opcao} onPress={() => setTempoPorDia(opcao)} style={styles.chip}>
-                  <Text style={styles.chipTexto}>{opcao}</Text>
+                <Pressable key={opcao.minutos} onPress={() => setTempoPorDia(opcao.minutos)} style={styles.chip}>
+                  <Text style={styles.chipTexto}>{opcao.rotulo}</Text>
                 </Pressable>
               );
             })}
@@ -203,7 +366,7 @@ export default function RotinaScreen() {
             </View>
             <Text style={styles.cardTitulo}>Lembrete diário</Text>
             {/* Toggle proprio: o Switch nativo nao aceita gradiente nem bolinha escura */}
-            <Pressable onPress={() => setLembreteAtivo(!lembreteAtivo)} hitSlop={8}>
+            <Pressable onPress={alternarLembrete} hitSlop={8}>
               {lembreteAtivo ? (
                 <LinearGradient
                   colors={GRADIENTE_CHIP}
@@ -221,24 +384,40 @@ export default function RotinaScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.linha}>
-            <LinearGradient
-              colors={GRADIENTE_CHIP}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.chipCheio}
-            >
-              <Text style={styles.chipCheioTexto}>{horario}</Text>
-            </LinearGradient>
-            <Pressable onPress={() => setHorario('20:00')} style={styles.chip}>
-              <Text style={styles.chipTexto}>alterar</Text>
+          <View style={[styles.linha, !lembreteAtivo && styles.desativado]}>
+            <Pressable onPress={alterarHorario} disabled={!lembreteAtivo}>
+              <LinearGradient
+                colors={GRADIENTE_CHIP}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.chipCheio}
+              >
+                <Text style={styles.chipCheioTexto}>{horario}</Text>
+              </LinearGradient>
+            </Pressable>
+            <Pressable onPress={alterarHorario} disabled={!lembreteAtivo} style={styles.chip}>
+              <Text style={styles.chipTexto}>{seletorAberto ? 'pronto' : 'alterar'}</Text>
             </Pressable>
           </View>
+
+          {Platform.OS === 'ios' && seletorAberto && (
+            <DateTimePicker
+              value={horarioParaDate(horario)}
+              mode="time"
+              display="spinner"
+              themeVariant="dark"
+              textColor={COR.tinta}
+              onValueChange={(_evento, data) => setHorario(dateParaHorario(data))}
+            />
+          )}
         </LinearGradient>
+
+        {erro ? <Text style={styles.erro}>{erro}</Text> : null}
 
         {/* Botao continuar */}
         <Pressable
-          onPress={() => router.push('/onboarding/convite')}
+          onPress={continuar}
+          disabled={salvando}
           style={({ pressed }) => [styles.botaoArea, pressed && styles.botaoPressionado]}
         >
           <LinearGradient
@@ -247,8 +426,12 @@ export default function RotinaScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.botao}
           >
-            <Text style={styles.botaoTexto}>Continuar</Text>
-            <Ionicons name="arrow-forward" size={18} color={COR.fundo} />
+            <Text style={styles.botaoTexto}>{salvando ? 'Salvando...' : 'Continuar'}</Text>
+            {salvando ? (
+              <ActivityIndicator color={COR.fundo} />
+            ) : (
+              <Ionicons name="arrow-forward" size={18} color={COR.fundo} />
+            )}
           </LinearGradient>
         </Pressable>
       </ScrollView>
@@ -466,6 +649,18 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     backgroundColor: COR.apagado,
+  },
+  carregando: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  desativado: {
+    opacity: 0.4,
+  },
+  erro: {
+    color: COR.coral,
+    fontSize: 12.5,
+    fontFamily: 'Archivo_600SemiBold',
   },
   botaoArea: {
     marginTop: 'auto',

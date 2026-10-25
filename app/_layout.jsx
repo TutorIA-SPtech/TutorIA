@@ -7,6 +7,8 @@ import {
   Archivo_700Bold,
 } from '@expo-google-fonts/archivo';
 import { StatusBar } from 'expo-status-bar';
+import { AuthProvider } from '../contexts/AuthContext';
+import { MensagemProvider } from '../components/CaixaMensagem';
 
 export default function RootLayout() {
   // Carrega as fontes do Google
@@ -24,13 +26,14 @@ export default function RootLayout() {
 
   // Lógica de Renderização da estrutura de navegação
   return (
-    <>
-    <StatusBar style="light" backgroundColor="transparent" translucent={true} />
-    
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="(public)" /> 
-    </Stack>
-    </>
+    <AuthProvider>
+      <MensagemProvider>
+        <StatusBar style="light" backgroundColor="transparent" translucent={true} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(public)" />
+        </Stack>
+      </MensagemProvider>
+    </AuthProvider>
   );
 }

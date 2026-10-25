@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
+import { useLogout } from '../../../hooks/useLogout';
 import Svg, { Defs, LinearGradient as SvgGradient, Stop, Rect, Circle, Path } from 'react-native-svg';
 
 const COR = {
@@ -51,11 +52,20 @@ function Tuti() {
 }
 
 export default function ConviteScreen() {
+  const { confirmarSaida } = useLogout();
+
+  const voltar = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    confirmarSaida();
+  };
+
   return (
     <SafeAreaView style={styles.tela}>
       <StatusBar style="light" />
 
-      {/* Brilhos do fundo: lavanda no canto de cima a direita, coral no de baixo a esquerda */}
       <LinearGradient
         colors={['rgba(157,169,255,0.34)', 'rgba(157,169,255,0)']}
         start={{ x: 1, y: 0 }}
@@ -71,9 +81,8 @@ export default function ConviteScreen() {
         pointerEvents="none"
       />
 
-      {/* Cabecalho */}
       <View style={styles.cabecalho}>
-        <Pressable onPress={() => router.back()} style={styles.voltar} hitSlop={10}>
+        <Pressable onPress={voltar} style={styles.voltar} hitSlop={10}>
           <Ionicons name="arrow-back" size={15} color={COR.apagado} />
         </Pressable>
         <Text style={styles.cabecalhoTitulo}>Diagnóstico</Text>
@@ -83,7 +92,6 @@ export default function ConviteScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.conteudo}>
-        {/* Barra de progresso: ultimo passo do cadastro */}
         <View style={styles.barra}>
           <LinearGradient
             colors={GRADIENTE}
@@ -93,7 +101,6 @@ export default function ConviteScreen() {
           />
         </View>
 
-        {/* Tuti + titulo */}
         <View style={styles.topo}>
           <Tuti />
           <Text style={styles.titulo}>Vamos descobrir onde você está</Text>
@@ -104,7 +111,6 @@ export default function ConviteScreen() {
           não te fazer perder tempo com o que você já sabe.
         </Text>
 
-        {/* Avisos numerados */}
         <View style={styles.lista}>
           {AVISOS.map((aviso, indice) => (
             <View key={aviso} style={styles.item}>
@@ -116,7 +122,6 @@ export default function ConviteScreen() {
           ))}
         </View>
 
-        {/* Acoes */}
         <View style={styles.acoes}>
           <Pressable
             onPress={() => router.push('/(private)/questionnaire')}
@@ -133,7 +138,7 @@ export default function ConviteScreen() {
             </LinearGradient>
           </Pressable>
 
-          <Pressable onPress={() => router.replace('/')} style={styles.botaoVazado}>
+          <Pressable onPress={() => router.replace('/inicio')} style={styles.botaoVazado}>
             <Text style={styles.botaoVazadoTexto}>Fazer depois</Text>
           </Pressable>
         </View>

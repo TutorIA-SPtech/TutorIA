@@ -14,9 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "bundleIdentifier": "com.sptech.tutoria",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.sptech.tutoria",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -28,7 +30,16 @@
     "plugins": [
       "expo-router",
       "expo-status-bar",
-      "expo-font"
-    ]
+      "expo-font",
+      "expo-secure-store",
+      "@react-native-google-signin/google-signin",
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "40a3c062-4652-4513-b1d9-a136365c7379"
+      }
+    }
   }
 }
