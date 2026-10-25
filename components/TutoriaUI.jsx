@@ -298,7 +298,7 @@ export function Chip({ titulo, onPress, style, estiloTexto, children }) {
 
 const ABAS = [
   { id: 'inicio', rotulo: 'Início', icone: 'inicio' },
-  { id: 'plano', rotulo: 'Plano', icone: 'plano', semTela: true },
+  { id: 'plano', rotulo: 'Plano', icone: 'plano' },
   { id: 'ia', rotulo: 'IA', icone: 'estrela' },
   { id: 'progresso', rotulo: 'Progresso', icone: 'barras' },
   { id: 'perfil', rotulo: 'Perfil', icone: 'perfil', semTela: true },

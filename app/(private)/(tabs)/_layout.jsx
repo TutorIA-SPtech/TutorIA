@@ -14,6 +14,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="inicio" />
+      <Tabs.Screen name="plano" />
       <Tabs.Screen name="ia" />
       <Tabs.Screen name="progresso" />
       <Tabs.Screen name="limite" options={{ href: null }} />

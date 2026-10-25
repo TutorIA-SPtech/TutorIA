@@ -158,7 +158,11 @@ export default function ResultsScreen() {
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8} onPress={() => router.push('/tabs')}>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            activeOpacity={0.8}
+            onPress={() => router.replace('/(private)/(tabs)/plano')}
+          >
             <Text style={styles.primaryButtonText}>Ver meu plano</Text>
             <Ionicons name="arrow-forward" size={20} color="#0A0D14" />
           </TouchableOpacity>

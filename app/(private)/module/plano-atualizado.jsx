@@ -152,12 +152,12 @@ export default function PlanoAtualizadoScreen() {
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <PrimaryButton
           title="Aceitar mudanças"
-          onPress={() => router.replace('/(private)/tabs/plano')}
+          onPress={() => router.replace('/(private)/(tabs)/plano')}
         />
         <TouchableOpacity
           style={styles.secondaryButton}
           activeOpacity={0.8}
-          onPress={() => router.replace('/(private)/tabs/plano')}
+          onPress={() => router.replace('/(private)/(tabs)/plano')}
         >
           <Text style={styles.secondaryButtonTexto}>Manter meu plano atual</Text>
         </TouchableOpacity>
