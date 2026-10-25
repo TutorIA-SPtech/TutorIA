@@ -21,6 +21,12 @@ A detecção automática ajuda no desenvolvimento local, mas não pode garantir 
 
 O token de acesso é persistido via `expo-secure-store` no iOS/Android. Na web, é mantido em `sessionStorage`, que não é um armazenamento seguro contra XSS. O botão de login Google não é exibido na web.
 
+### Modo de demonstração das APIs
+
+Para testar as telas sem depender dos endpoints de estudo, defina `EXPO_PUBLIC_API_MOCKS=true` no `.env` e reinicie o Expo. O modo usa `axios-mock-adapter` para simular perfil de estudo, progresso, domínio, uso da IA e pedidos ao Tuti. O perfil e o uso de IA ficam em memória e voltam aos valores iniciais ao reiniciar o app.
+
+As rotas `/api/v1/auth/**` nunca são interceptadas: login, cadastro, login Google e recuperação de senha continuam exigindo o backend real e `EXPO_PUBLIC_API_URL`. Sem `EXPO_PUBLIC_API_MOCKS=true`, todas as chamadas continuam usando a API normalmente. Uma rota não autenticada sem fixture em modo demo retorna `MOCK_ENDPOINT_NOT_CONFIGURED`, para deixar integrações faltantes explícitas.
+
 ### Configuração do login com Google
 
 O login Google usa `@react-native-google-signin/google-signin` e não funciona no Expo Go. É necessário gerar um development build ou build de produção depois de configurar os clientes OAuth.

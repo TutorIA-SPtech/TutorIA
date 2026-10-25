@@ -1,7 +1,14 @@
 import axios from 'axios';
+import AxiosMockAdapter from 'axios-mock-adapter';
 import { getStoredAuth } from './authStorage';
+import { installMockApi } from './mockApi';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, '');
+const MOCK_API_ENABLED = process.env.EXPO_PUBLIC_API_MOCKS === 'true';
+
+function isAuthEndpoint(url) {
+  return String(url ?? '').startsWith('/api/v1/auth/');
+}
 
 const fieldMessages = {
   name: 'Confira o nome informado (obrigatório, até 120 caracteres).',
@@ -44,6 +51,10 @@ function getApiError(status, problem, unauthorizedMessage) {
     return new ApiError('Código inválido ou expirado.', {}, problem.code);
   }
 
+  if (problem?.code === 'MOCK_ENDPOINT_NOT_CONFIGURED') {
+    return new ApiError(problem.message, {}, problem.code);
+  }
+
   if (status === 429) {
     return new ApiError('Você atingiu o limite de uso da IA de hoje. Renova às 00:00.', {}, 'AI_LIMIT_EXCEEDED');
   }
@@ -72,8 +83,12 @@ const api = axios.create({
   },
 });
 
+if (MOCK_API_ENABLED) {
+  installMockApi(api, AxiosMockAdapter);
+}
+
 api.interceptors.request.use(async (config) => {
-  if (!API_BASE_URL) {
+  if (!API_BASE_URL && !(MOCK_API_ENABLED && !isAuthEndpoint(config.url))) {
     throw new ApiError('A URL da API não está configurada. Defina EXPO_PUBLIC_API_URL e reinicie o Expo.');
   }
 
