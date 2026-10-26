@@ -300,8 +300,7 @@ const ABAS = [
   { id: 'inicio', rotulo: 'Início', icone: 'inicio' },
   { id: 'plano', rotulo: 'Plano', icone: 'plano' },
   { id: 'ia', rotulo: 'IA', icone: 'estrela' },
-  { id: 'progresso', rotulo: 'Progresso', icone: 'barras' },
-  { id: 'perfil', rotulo: 'Perfil', icone: 'perfil', semTela: true },
+  { id: 'progresso', rotulo: 'Progresso', icone: 'barras' }
 ];
 const PILULA_L = 44;
 const PILULA_A = 32;
