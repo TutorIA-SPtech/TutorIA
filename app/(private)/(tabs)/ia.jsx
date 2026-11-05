@@ -1,20 +1,22 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
 import {
-  COR, F, txt, tela, Fundo, Cabecalho, Tuti, Icone, IconeCaixa, Contorno, Chip, Enviar,
+  COR, F, txt, tela, Fundo, Cabecalho, Tuti, Icone, IconeCaixa, Contorno, Enviar,
 } from '../../../components/TutoriaUI';
 import { ApiError } from '../../../services/apiClient';
 import { getAiUsage } from '../../../services/aiUsageApi';
-import { askTutor } from '../../../services/tutorApi';
+import {
+  askTutor, getConversationMessages, getLatestConversation, MAX_QUESTION_LENGTH,
+} from '../../../services/tutorApi';
 
+// O Tuti não gera questões nem lê anexos: as sugestões pedem só explicações.
 const SUGESTOES = [
-  { texto: 'Questionário intermediário sobre funções', icone: 'lista', cor: COR.lilas, fundo: 'rgba(157,169,255,0.15)' },
-  { texto: 'Simulado com meus assuntos mais fracos', icone: 'barras', cor: COR.coral, fundo: 'rgba(255,122,89,0.14)' },
+  { texto: 'Explique função do 1º grau com um exemplo resolvido', icone: 'lista', cor: COR.lilas, fundo: 'rgba(157,169,255,0.15)' },
+  { texto: 'Quais foram as causas da Revolução Industrial?', icone: 'barras', cor: COR.coral, fundo: 'rgba(255,122,89,0.14)' },
   { texto: 'Explique lei de Hess de forma mais simples', icone: 'info', cor: COR.menta, fundo: 'rgba(111,227,192,0.14)' },
-  { texto: 'Faça perguntas sobre o meu anexo', icone: 'arquivo', cor: COR.lilas, fundo: 'rgba(157,169,255,0.15)' },
 ];
 
 export default function ChatIAScreen() {
@@ -23,7 +25,33 @@ export default function ChatIAScreen() {
   const [texto, setTexto] = useState('');
   const [cota, setCota] = useState(null);
   const [enviando, setEnviando] = useState(false);
-  const [anexo, setAnexo] = useState(null);
+  const [conversaId, setConversaId] = useState(null);
+  const [carregandoConversa, setCarregandoConversa] = useState(true);
+
+  useEffect(() => {
+    let montado = true;
+
+    (async () => {
+      try {
+        const conversa = await getLatestConversation();
+        if (!conversa) return;
+        const historico = await getConversationMessages(conversa.id);
+        if (!montado) return;
+        setConversaId(conversa.id);
+        setMensagens(historico.map((m) => ({
+          autor: m.role === 'USER' ? 'aluno' : 'tuti',
+          texto: m.content,
+        })));
+      } catch {
+      } finally {
+        if (montado) setCarregandoConversa(false);
+      }
+    })();
+
+    return () => {
+      montado = false;
+    };
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -46,23 +74,46 @@ export default function ChatIAScreen() {
   );
 
   const noLimite = cota ? cota.usados >= cota.limite : false;
+  const bloqueado = noLimite || enviando || carregandoConversa;
+
+  const novaConversa = () => {
+    if (enviando) return;
+    setConversaId(null);
+    setMensagens([]);
+    setTexto('');
+  };
 
   const enviar = async (pedido) => {
     const t = (pedido ?? texto).trim();
-    if (!t || noLimite || enviando) return;
+    if (!t || bloqueado) return;
 
     setMensagens((m) => [...m, { autor: 'aluno', texto: t }]);
     setTexto('');
     setEnviando(true);
     try {
-      const resposta = await askTutor(t);
-      setMensagens((m) => [...m, { autor: 'tuti', texto: resposta }]);
-      setCota((c) => (c ? { ...c, usados: c.usados + 1 } : c));
+      const resposta = await askTutor(t, conversaId);
+      const { answer, usage } = resposta;
+      if (resposta.conversationId) {
+        setConversaId(resposta.conversationId);
+      }
+      setMensagens((m) => [...m, { autor: 'tuti', texto: answer }]);
+      if (usage) {
+        setCota({ usados: usage.used, limite: usage.limit });
+      }
     } catch (error) {
       if (error instanceof ApiError && error.code === 'AI_LIMIT_EXCEEDED') {
         setCota((c) => (c ? { ...c, usados: c.limite } : c));
       }
-      const mensagemErro = error instanceof ApiError ? error.message : 'O Tuti não conseguiu responder agora. Tente novamente.';
+      // A conversa foi apagada em outro aparelho: a próxima pergunta abre uma nova (o 404 não gasta cota).
+      const conversaSumiu = error instanceof ApiError && error.status === 404 && conversaId;
+      if (conversaSumiu) {
+        setConversaId(null);
+      }
+      const mensagemErro = conversaSumiu
+        ? 'Essa conversa não existe mais. Envie a pergunta de novo para começar outra.'
+        : error instanceof ApiError
+          ? error.fieldErrors?.question ?? error.message
+          : 'O Tuti não conseguiu responder agora. Tente novamente.';
       setMensagens((m) => [...m, { autor: 'tuti', texto: mensagemErro, erro: true }]);
     } finally {
       setEnviando(false);
@@ -91,7 +142,7 @@ export default function ChatIAScreen() {
                 <Tuti tam={50} />
                 <View style={{ flex: 1 }}>
                   <Text style={[txt.h1, { fontSize: 19, lineHeight: 22.8 }]}>O que você precisa agora?</Text>
-                  <Text style={[txt.tx, { fontSize: 11, lineHeight: 17, marginTop: 3 }]}>Escreva ou fale. Uso seu histórico e seus anexos.</Text>
+                  <Text style={[txt.tx, { fontSize: 11, lineHeight: 17, marginTop: 3 }]}>Tire suas dúvidas de estudo para o ENEM.</Text>
                 </View>
               </View>
 
@@ -123,7 +174,7 @@ export default function ChatIAScreen() {
             )
           )}
 
-          {enviando && (
+          {(enviando || carregandoConversa) && (
             <View style={[tela.linha, { gap: 9 }]}>
               <Tuti tam={30} antena={false} />
               <ActivityIndicator color={COR.lilas} />
@@ -139,34 +190,30 @@ export default function ChatIAScreen() {
         </ScrollView>
 
         <View style={e.rodape}>
+          {/* Anexos e áudio voltam quando o back ler anexos no chat e houver gravação. */}
           <View style={[tela.linha, { gap: 6 }]}>
-            {anexo && (
-              <Chip titulo={anexo} style={{ borderColor: 'rgba(201,182,255,0.3)' }} estiloTexto={{ color: COR.lilas }} onPress={() => setAnexo(null)}>
-                <Icone nome="arquivo" tam={11} cor={COR.lilas} espessura={2} />
-              </Chip>
+            {mensagens.length > 0 && (
+              <Pressable onPress={novaConversa} style={e.novaConversa} hitSlop={6} disabled={enviando}>
+                <Text style={e.verLimiteTexto}>Nova conversa</Text>
+              </Pressable>
             )}
-            {/* TODO: escolher anexo */}
-            <Chip titulo="+ anexo" onPress={() => {}} />
             <Pressable onPress={() => router.push('/limite')} style={e.verLimite} hitSlop={6}>
               <Text style={e.verLimiteTexto}>Ver limite de uso</Text>
             </Pressable>
           </View>
 
-          <View style={[e.campo, (noLimite || enviando) && { opacity: 0.45 }]}>
+          <View style={[e.campo, bloqueado && { opacity: 0.45 }]}>
             <TextInput
               style={e.campoTexto}
               value={texto}
               onChangeText={setTexto}
-              placeholder={mensagens.length === 0 ? 'Escreva seu pedido…' : 'Refinar pedido…'}
+              placeholder={mensagens.length === 0 ? 'Escreva seu pedido…' : 'Faça outra pergunta…'}
               placeholderTextColor={COR.apagado}
               onSubmitEditing={() => enviar()}
               returnKeyType="send"
-              editable={!noLimite && !enviando}
+              maxLength={MAX_QUESTION_LENGTH}
+              editable={!bloqueado}
             />
-            {/* TODO: gravar audio */}
-            <Pressable onPress={() => {}} hitSlop={8}>
-              <Icone nome="mic" tam={18} cor={COR.lilas} />
-            </Pressable>
             <Enviar tam={30} icone={14} onPress={() => enviar()} />
           </View>
         </View>
@@ -188,6 +235,7 @@ const e = StyleSheet.create({
   assunto: { color: COR.tinta, fontSize: 11, fontFamily: F.m },
   rodape: { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 14, gap: 10 },
   verLimite: { marginLeft: 'auto', paddingVertical: 6, paddingHorizontal: 11, borderRadius: 99, backgroundColor: COR.superficie },
+  novaConversa: { paddingVertical: 6, paddingHorizontal: 11, borderRadius: 99, backgroundColor: COR.superficie },
   verLimiteTexto: { color: COR.lilas, fontSize: 10.5, fontFamily: F.b },
   campo: {
     flexDirection: 'row', alignItems: 'center', gap: 10,

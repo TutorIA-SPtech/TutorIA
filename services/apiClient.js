@@ -16,7 +16,16 @@ const fieldMessages = {
   password: 'A senha é obrigatória e deve ter entre 8 e 72 caracteres.',
   newPassword: 'A senha deve ter entre 8 e 72 caracteres.',
   token: 'Informe o código recebido por e-mail.',
+  question: 'Escreva sua pergunta com até 2000 caracteres.',
 };
+
+function formatRenewalTime(renewsAt) {
+  const date = renewsAt ? new Date(renewsAt) : null;
+  if (!date || Number.isNaN(date.getTime())) {
+    return '00:00';
+  }
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
 
 export class ApiError extends Error {
   constructor(message, fieldErrors = {}, code = null) {
@@ -55,8 +64,21 @@ function getApiError(status, problem, unauthorizedMessage) {
     return new ApiError(problem.message, {}, problem.code);
   }
 
+  // O back devolve a cota nesse caso, então o aluno pode tentar de novo sem perder o pedido.
+  if (problem?.code === 'AI_UNAVAILABLE') {
+    return new ApiError(
+      'O Tuti está indisponível agora. Tente de novo em instantes: esse pedido não contou no seu limite.',
+      {},
+      problem.code,
+    );
+  }
+
   if (status === 429) {
-    return new ApiError('Você atingiu o limite de uso da IA de hoje. Renova às 00:00.', {}, 'AI_LIMIT_EXCEEDED');
+    return new ApiError(
+      `Você atingiu o limite de uso da IA de hoje. Renova às ${formatRenewalTime(problem?.renewsAt)}.`,
+      {},
+      'AI_LIMIT_EXCEEDED',
+    );
   }
 
   if (status === 401) {

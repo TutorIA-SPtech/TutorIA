@@ -1,7 +1,6 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-// O back ainda não tem campo para o lembrete (pendência P16), então ele fica salvo no aparelho.
 const REMINDER_STORAGE_KEY = 'tutoria.lembrete';
 const HORARIO_VALIDO = /^([01]\d|2[0-3]):[0-5]\d$/;
 

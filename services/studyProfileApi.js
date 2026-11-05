@@ -2,7 +2,6 @@ import { apiRequest, ApiError } from './apiClient';
 
 const STUDY_PROFILE_PATH = '/api/v1/me/study-profile';
 
-// Retorna null quando o usuário ainda não salvou o perfil de estudo.
 export async function getStudyProfile() {
   try {
     return await apiRequest(STUDY_PROFILE_PATH, {
@@ -17,7 +16,6 @@ export async function getStudyProfile() {
   }
 }
 
-// O PUT substitui o perfil inteiro (upsert), então todos os campos precisam ir juntos.
 export function saveStudyProfile({ examDate, dailyMinutes, studyDays, targetCourseId }) {
   return apiRequest(STUDY_PROFILE_PATH, {
     method: 'PUT',

@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../../components/Button';
 import { useAuth } from '../../contexts/AuthContext';
-import { login, loginWithGoogle } from '../../services/authApi';
+import { homeRouteFor, login, loginWithGoogle } from '../../services/authApi';
 import { getGoogleIdToken, GoogleAuthError } from '../../services/googleAuth';
 import { ApiError } from '../../services/apiClient';
 import { validateLogin } from '../../utils/authValidation';
@@ -62,7 +62,7 @@ export default function LoginScreen() {
         try {
             const credenciais = await login({ email: email.trim(), password: senha });
             await signIn(credenciais);
-            router.replace('/onboarding');
+            router.replace(homeRouteFor(credenciais.onboardingCompleted));
         } catch (error) {
             setErros(error instanceof ApiError ? error.fieldErrors : {});
             setErroGeral(error instanceof ApiError
@@ -91,7 +91,7 @@ export default function LoginScreen() {
 
             const credenciais = await loginWithGoogle(idToken);
             await signIn(credenciais);
-            router.replace('/onboarding');
+            router.replace(homeRouteFor(credenciais.onboardingCompleted));
         } catch (error) {
             setErroGeral(error instanceof ApiError || error instanceof GoogleAuthError
                 ? error.message

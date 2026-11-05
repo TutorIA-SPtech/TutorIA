@@ -12,7 +12,6 @@ const TIPOS = {
 
 const MensagemContext = createContext(null);
 
-// Substitui Alert.alert / window.confirm com o visual do app e funciona igual em Android, iOS e web.
 export function MensagemProvider({ children }) {
   const [atual, setAtual] = useState(null);
   const resolverRef = useRef(null);
