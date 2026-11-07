@@ -3,6 +3,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import {
   COR, F, txt, tela, Fundo, Cabecalho, Tuti, Icone, IconeCaixa, Contorno, Enviar,
 } from '../../../components/TutoriaUI';
@@ -11,6 +12,14 @@ import { getAiUsage } from '../../../services/aiUsageApi';
 import {
   askTutor, getConversationMessages, getLatestConversation, MAX_QUESTION_LENGTH,
 } from '../../../services/tutorApi';
+import HistoricoConversas from '../../../components/HistoricoConversas';
+
+function paraMensagens(historico) {
+  return historico.map((m) => ({
+    autor: m.role === 'USER' ? 'aluno' : 'tuti',
+    texto: m.content,
+  }));
+}
 
 // O Tuti não gera questões nem lê anexos: as sugestões pedem só explicações.
 const SUGESTOES = [
@@ -27,31 +36,60 @@ export default function ChatIAScreen() {
   const [enviando, setEnviando] = useState(false);
   const [conversaId, setConversaId] = useState(null);
   const [carregandoConversa, setCarregandoConversa] = useState(true);
+  const [historicoAberto, setHistoricoAberto] = useState(false);
+  // Só a última conversa pedida é aplicada na tela, mesmo se uma resposta anterior chegar depois.
+  const pedidoConversa = useRef(0);
 
   useEffect(() => {
-    let montado = true;
+    const pedido = ++pedidoConversa.current;
 
     (async () => {
       try {
         const conversa = await getLatestConversation();
         if (!conversa) return;
         const historico = await getConversationMessages(conversa.id);
-        if (!montado) return;
+        if (pedido !== pedidoConversa.current) return;
         setConversaId(conversa.id);
-        setMensagens(historico.map((m) => ({
-          autor: m.role === 'USER' ? 'aluno' : 'tuti',
-          texto: m.content,
-        })));
+        setMensagens(paraMensagens(historico));
       } catch {
       } finally {
-        if (montado) setCarregandoConversa(false);
+        if (pedido === pedidoConversa.current) setCarregandoConversa(false);
       }
     })();
 
     return () => {
-      montado = false;
+      pedidoConversa.current += 1;
     };
   }, []);
+
+  const abrirConversa = async (conversa) => {
+    setHistoricoAberto(false);
+    if (enviando || conversa.id === conversaId) return;
+
+    const pedido = ++pedidoConversa.current;
+    setCarregandoConversa(true);
+    try {
+      const historico = await getConversationMessages(conversa.id);
+      if (pedido !== pedidoConversa.current) return;
+      setConversaId(conversa.id);
+      setMensagens(paraMensagens(historico));
+      setTexto('');
+    } catch (error) {
+      if (pedido !== pedidoConversa.current) return;
+      const mensagemErro = error instanceof ApiError && error.status === 404
+        ? 'Essa conversa não existe mais.'
+        : 'Não foi possível abrir essa conversa. Tente novamente.';
+      setMensagens((m) => [...m, { autor: 'tuti', texto: mensagemErro, erro: true }]);
+    } finally {
+      if (pedido === pedidoConversa.current) setCarregandoConversa(false);
+    }
+  };
+
+  const conversaApagada = (id) => {
+    if (id === conversaId) {
+      novaConversa();
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -78,6 +116,10 @@ export default function ChatIAScreen() {
 
   const novaConversa = () => {
     if (enviando) return;
+    // Cancela uma abertura de conversa que ainda esteja carregando.
+    pedidoConversa.current += 1;
+    setCarregandoConversa(false);
+    setHistoricoAberto(false);
     setConversaId(null);
     setMensagens([]);
     setTexto('');
@@ -192,6 +234,10 @@ export default function ChatIAScreen() {
         <View style={e.rodape}>
           {/* Anexos e áudio voltam quando o back ler anexos no chat e houver gravação. */}
           <View style={[tela.linha, { gap: 6 }]}>
+            <Pressable onPress={() => setHistoricoAberto(true)} style={[e.novaConversa, tela.linha, { gap: 5 }]} hitSlop={6} disabled={enviando}>
+              <Ionicons name="time-outline" size={12} color={COR.lilas} />
+              <Text style={e.verLimiteTexto}>Histórico</Text>
+            </Pressable>
             {mensagens.length > 0 && (
               <Pressable onPress={novaConversa} style={e.novaConversa} hitSlop={6} disabled={enviando}>
                 <Text style={e.verLimiteTexto}>Nova conversa</Text>
@@ -218,6 +264,15 @@ export default function ChatIAScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <HistoricoConversas
+        visivel={historicoAberto}
+        conversaAtualId={conversaId}
+        onFechar={() => setHistoricoAberto(false)}
+        onAbrir={abrirConversa}
+        onNova={novaConversa}
+        onApagada={conversaApagada}
+      />
     </SafeAreaView>
   );
 }

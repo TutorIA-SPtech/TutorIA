@@ -57,6 +57,8 @@ function createState() {
   return {
     studyProfile: null,
     conversations: [],
+    // Contador próprio: com conversas apagadas, length + 1 repetiria ids.
+    nextConversationId: 1,
     aiUsage: INITIAL_AI_USAGE.map((category) => ({ ...category })),
   };
 }
@@ -134,7 +136,7 @@ export function installMockApi(api, MockAdapter) {
     const now = new Date().toISOString();
     if (!conversation) {
       conversation = {
-        id: state.conversations.length + 1,
+        id: state.nextConversationId++,
         title: question.trim().slice(0, 80),
         createdAt: now,
         updatedAt: now,
@@ -151,11 +153,24 @@ export function installMockApi(api, MockAdapter) {
     return [200, { conversationId: conversation.id, answer, usage: { ...usage } }];
   });
 
-  mock.onGet('/api/v1/tutor/conversations').reply(() => {
-    const content = [...state.conversations]
+  mock.onGet('/api/v1/tutor/conversations').reply((config) => {
+    const page = Number(config.params?.page ?? 0);
+    const size = Number(config.params?.size ?? 20);
+    const all = [...state.conversations]
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .map(({ messages, ...summary }) => summary);
-    return [200, { content, totalElements: content.length }];
+    const content = all.slice(page * size, (page + 1) * size);
+    const totalPages = Math.ceil(all.length / size);
+    return [200, { content, totalElements: all.length, totalPages, number: page, last: page + 1 >= totalPages }];
+  });
+  mock.onDelete(/\/api\/v1\/tutor\/conversations\/\d+$/).reply((config) => {
+    const id = Number(config.url.match(/conversations\/(\d+)/)[1]);
+    const index = state.conversations.findIndex((item) => item.id === id);
+    if (index === -1) {
+      return [404, { message: 'Conversation not found' }];
+    }
+    state.conversations.splice(index, 1);
+    return [204];
   });
   mock.onGet(/\/api\/v1\/tutor\/conversations\/\d+\/messages/).reply((config) => {
     const id = Number(config.url.match(/conversations\/(\d+)/)[1]);

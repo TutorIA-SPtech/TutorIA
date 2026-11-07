@@ -9,6 +9,7 @@ import DotGridBackground from '../../../components/DotGridBackground';
 import AnimatedCircleProgress from '../../../components/AnimatedCircleProgress';
 import AnimatedProgressBar from '../../../components/AnimatedProgressBar';
 import { styles } from '../../../styles/tabs/home';
+import { useLogout } from '../../../hooks/useLogout';
 
 // Dados mockados preparados para receber injeção de uma API futura
 const MOCK_API_RESPONSE = {
@@ -25,6 +26,7 @@ const MOCK_API_RESPONSE = {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { confirmarSaida } = useLogout();
 
   // Estado que armazenará os dados da Home dinamicamente
   const [data, setData] = useState(MOCK_API_RESPONSE);
@@ -50,6 +52,16 @@ export default function HomeScreen() {
             <Ionicons name="flame" size={14} color="#F0B95C" />
             <Text style={styles.streakText}>{data.usuario.sequencia}</Text>
           </View>
+          {/* Provisório até existir a tela de Perfil, que deve usar o mesmo useLogout. */}
+          <TouchableOpacity
+            onPress={confirmarSaida}
+            style={styles.sairBotao}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Sair da conta"
+          >
+            <Ionicons name="log-out-outline" size={18} color="#8A91A6" />
+          </TouchableOpacity>
         </View>
 
         {/* Trilha de hoje */}
