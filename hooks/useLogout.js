@@ -7,7 +7,6 @@ import { signOutGoogle } from '../services/googleAuth';
 const TITULO_SAIDA = 'Sair da conta?';
 const MENSAGEM_SAIDA = 'Você voltará para a tela de entrada. Seu progresso salvo continua na sua conta.';
 
-// Fluxo único de logout. Reutilizar na futura tela de Perfil.
 export function useLogout() {
   const router = useRouter();
   const { signOut } = useAuth();
@@ -21,11 +20,9 @@ export function useLogout() {
     saidaEmAndamento.current = true;
 
     try {
-      // Nunca lança erro: falha no Google não impede o logout do app.
       await signOutGoogle();
       await signOut();
 
-      // Remove as telas privadas da pilha para o voltar do Android não retornar a elas.
       if (router.canDismiss()) {
         router.dismissAll();
       }

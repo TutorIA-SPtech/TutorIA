@@ -3,8 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-// "name" é o nome do arquivo dentro de app/(private)/(tabs)/.
-// Abas sem arquivo ainda ficam visíveis, mas sem ação, até a tela ser criada.
+
 const ABAS = [
   { name: 'index', label: 'Início', icon: 'home-outline' },
   { name: 'plano', label: 'Plano', icon: 'book-outline' },

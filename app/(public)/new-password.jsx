@@ -16,28 +16,13 @@ import PrimaryButton from '../../components/Button';
 import DotGridBackground from '../../components/DotGridBackground';
 import { resetPassword } from '../../services/authApi';
 import { ApiError } from '../../services/apiClient';
+import { PASSWORD_STRENGTH_LEVELS, passwordStrength } from '../../utils/authValidation';
 
 const MAX_SENHA = 72;
 
 const REGRAS = [
     { id: 'tamanho', texto: 'Pelo menos 8 caracteres', ok: (s) => s.length >= 8 },
     { id: 'letraNumero', texto: 'Uma letra e um número', ok: (s) => /[a-zA-Z]/.test(s) && /\d/.test(s) },
-];
-function forca(s) {
-    if (!s) return 0;
-    let p = 0;
-    if (s.length >= 8) p++;
-    if (/[a-zA-Z]/.test(s) && /\d/.test(s)) p++;
-    if (/[a-z]/.test(s) && /[A-Z]/.test(s)) p++;
-    if (/[^a-zA-Z0-9]/.test(s) || s.length >= 12) p++;
-    return p;
-}
-const NIVEIS = [
-    { texto: '', cor: '#202538' },
-    { texto: 'fraca', cor: '#FF7A59' },
-    { texto: 'média', cor: '#FFC978' },
-    { texto: 'boa', cor: '#9FA8FF' },
-    { texto: 'forte', cor: '#57DDA9' },
 ];
 
 export default function NovaSenhaScreen() {
@@ -51,7 +36,8 @@ export default function NovaSenhaScreen() {
     const [erro, setErro] = useState('');
     const [tokenExpirado, setTokenExpirado] = useState(false);
 
-    const nivel = NIVEIS[forca(senha)];
+    const forca = passwordStrength(senha);
+    const nivel = PASSWORD_STRENGTH_LEVELS[forca];
     const regrasOk = REGRAS.every((r) => r.ok(senha));
     const coincidem = confirmar.length > 0 && confirmar === senha;
     const naoCoincidem = confirmar.length > 0 && confirmar !== senha;
@@ -145,11 +131,11 @@ export default function NovaSenhaScreen() {
                                         <View
                                             style={[
                                                 styles.strengthFill,
-                                                { width: `${(forca(senha) / 4) * 100}%`, backgroundColor: nivel.cor },
+                                                { width: `${(forca / 4) * 100}%`, backgroundColor: nivel.color },
                                             ]}
                                         />
                                     </View>
-                                    <Text style={[styles.strengthText, { color: nivel.cor }]}>{nivel.texto}</Text>
+                                    <Text style={[styles.strengthText, { color: nivel.color }]}>{nivel.label}</Text>
                                 </View>
                             )}
                         </View>

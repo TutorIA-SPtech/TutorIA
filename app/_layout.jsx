@@ -11,7 +11,6 @@ import { AuthProvider } from '../contexts/AuthContext';
 import { MensagemProvider } from '../components/CaixaMensagem';
 
 export default function RootLayout() {
-  // Carrega as fontes do Google
   const [fontesCarregadas] = useFonts({
     Archivo_400Regular,
     Archivo_500Medium,
@@ -19,12 +18,10 @@ export default function RootLayout() {
     Archivo_700Bold,
   });
 
-  // Segura a renderização até que as fontes estejam prontas para evitar texto invisível
   if (!fontesCarregadas) {
     return null;
   }
 
-  // Lógica de Renderização da estrutura de navegação
   return (
     <AuthProvider>
       <MensagemProvider>

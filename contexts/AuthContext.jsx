@@ -25,7 +25,8 @@ export function AuthProvider({ children }) {
     restoreAuth();
   }, [restoreAuth]);
 
-  const signIn = useCallback(async (credentials) => {
+  const signIn = useCallback(async ({ accessToken, tokenType }) => {
+    const credentials = { accessToken, tokenType };
     await saveStoredAuth(credentials);
     setAuth(credentials);
   }, []);

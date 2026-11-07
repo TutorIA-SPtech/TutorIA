@@ -16,10 +16,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../../components/Button';
 import { useAuth } from '../../contexts/AuthContext';
-import { loginWithGoogle, signUp } from '../../services/authApi';
+import { homeRouteFor, loginWithGoogle, signUp } from '../../services/authApi';
 import { getGoogleIdToken, GoogleAuthError } from '../../services/googleAuth';
 import { ApiError } from '../../services/apiClient';
-import { validateSignUp } from '../../utils/authValidation';
+import { PASSWORD_STRENGTH_LEVELS, passwordStrength, validateSignUp } from '../../utils/authValidation';
 
 export default function CadastroScreen() {
   const router = useRouter();
@@ -37,6 +37,9 @@ export default function CadastroScreen() {
   const [nomeFocado, setNomeFocado] = useState(false);
   const [emailFocado, setEmailFocado] = useState(false);
   const [senhaFocada, setSenhaFocada] = useState(false);
+
+  const forcaSenha = passwordStrength(senha);
+  const nivelSenha = PASSWORD_STRENGTH_LEVELS[forcaSenha];
 
   function atualizarCampo(campo, valor, atualizar) {
     atualizar(valor);
@@ -96,9 +99,10 @@ export default function CadastroScreen() {
         return;
       }
 
+      // "Continuar com Google" no cadastro também pode ser uma conta que já fez o onboarding.
       const credenciais = await loginWithGoogle(idToken);
       await signIn(credenciais);
-      router.replace('/onboarding');
+      router.replace(homeRouteFor(credenciais.onboardingCompleted));
     } catch (error) {
       setErroGeral(error instanceof ApiError || error instanceof GoogleAuthError
         ? error.message
@@ -239,11 +243,21 @@ export default function CadastroScreen() {
                 {erros.password ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{erros.password}</Text> : null}
 
                 {/* Barrinha de Força da Senha */}
-                <View style={styles.strengthContainer}>
-                  <View style={[styles.strengthBar, styles.strengthBarActive]} />
-                  <View style={[styles.strengthBar, styles.strengthBarActive]} />
-                  <View style={styles.strengthBar} />
-                  <Text style={styles.strengthText}>boa</Text>
+                <View
+                  style={styles.strengthContainer}
+                  accessibilityLabel={nivelSenha.label ? `Força da senha: ${nivelSenha.label}` : undefined}
+                  accessibilityLiveRegion="polite"
+                >
+                  {[1, 2, 3, 4].map((segmento) => (
+                    <View
+                      key={segmento}
+                      style={[
+                        styles.strengthBar,
+                        segmento <= forcaSenha && { backgroundColor: nivelSenha.color },
+                      ]}
+                    />
+                  ))}
+                  <Text style={[styles.strengthText, { color: nivelSenha.color }]}>{nivelSenha.label}</Text>
                 </View>
               </View>
             </View>
@@ -422,14 +436,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#202538',
     borderRadius: 2,
   },
-  strengthBarActive: {
-    backgroundColor: '#57DDA9',
-  },
   strengthText: {
-    color: '#57DDA9',
     fontSize: 12,
     fontWeight: 'bold',
     marginLeft: 4,
+    minWidth: 40,
+    textAlign: 'right',
   },
   dividerContainer: {
     flexDirection: 'row',

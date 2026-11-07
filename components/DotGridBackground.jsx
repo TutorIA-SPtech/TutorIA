@@ -3,7 +3,7 @@ import { Dimensions, StyleSheet } from 'react-native';
 import Svg, { Defs, Pattern, Circle, Rect } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
-const ESPACO = 22; // distância entre os pontos
+const ESPACO = 22; 
 const RAIO_PONTO = 1.3;
 
 export default function DotGridBackground({ opacity = 0.06 }) {

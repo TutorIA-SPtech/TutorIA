@@ -52,6 +52,17 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
+  sairBotao: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.09)',
+  },
 
   // --- Trilha de hoje ---
   trilhaCard: {

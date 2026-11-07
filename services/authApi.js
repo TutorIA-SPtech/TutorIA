@@ -19,7 +19,14 @@ async function authenticate(path, credentials, requestMessages = {}) {
   return {
     accessToken: response.accessToken,
     tokenType: response.tokenType,
+    // Só decide a rota logo após o login; o AuthContext não guarda esse campo na sessão.
+    onboardingCompleted: response.onboardingCompleted === true,
   };
+}
+
+// Quem já salvou a rotina de estudos (fim do onboarding) vai direto para a home.
+export function homeRouteFor(onboardingCompleted) {
+  return onboardingCompleted ? '/inicio' : '/onboarding';
 }
 
 export function signUp({ name, email, password }) {
