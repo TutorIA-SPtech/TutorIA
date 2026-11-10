@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator, Alert, Animated, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView,
+  StyleSheet, Text, TextInput, View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import {
   COR, F, txt, tela, Fundo, Cabecalho, Tuti, Icone, IconeCaixa, Contorno, Enviar,
 } from '../../../components/TutoriaUI';
@@ -21,6 +26,11 @@ function paraMensagens(historico) {
   }));
 }
 
+// true = só reconhece a fala offline, direto no aparelho (falha se o idioma não estiver baixado no celular).
+// false = usa o reconhecedor do sistema (Apple/Google), que decide se processa no aparelho ou na nuvem.
+// De qualquer forma, o áudio nunca passa pelo backend do TutorIA: só o texto final é enviado.
+const SO_RECONHECIMENTO_NO_APARELHO = false;
+
 // O Tuti não gera questões nem lê anexos: as sugestões pedem só explicações.
 const SUGESTOES = [
   { texto: 'Explique função do 1º grau com um exemplo resolvido', icone: 'lista', cor: COR.lilas, fundo: 'rgba(157,169,255,0.15)' },
@@ -37,6 +47,12 @@ export default function ChatIAScreen() {
   const [conversaId, setConversaId] = useState(null);
   const [carregandoConversa, setCarregandoConversa] = useState(true);
   const [historicoAberto, setHistoricoAberto] = useState(false);
+  // Foto tirada pela câmera: fica só no chat (o back ainda não recebe imagens).
+  const [foto, setFoto] = useState(null);
+  const [ouvindo, setOuvindo] = useState(false);
+  const ouvindoRef = useRef(false);
+  const textoAntesDaFala = useRef('');
+  const pulso = useRef(new Animated.Value(0)).current;
   // Só a última conversa pedida é aplicada na tela, mesmo se uma resposta anterior chegar depois.
   const pedidoConversa = useRef(0);
 
@@ -74,6 +90,7 @@ export default function ChatIAScreen() {
       setConversaId(conversa.id);
       setMensagens(paraMensagens(historico));
       setTexto('');
+      setFoto(null);
     } catch (error) {
       if (pedido !== pedidoConversa.current) return;
       const mensagemErro = error instanceof ApiError && error.status === 404
@@ -114,6 +131,129 @@ export default function ChatIAScreen() {
   const noLimite = cota ? cota.usados >= cota.limite : false;
   const bloqueado = noLimite || enviando || carregandoConversa;
 
+  // ---------- Voz: fala vira texto no campo ----------
+  useSpeechRecognitionEvent('start', () => {
+    ouvindoRef.current = true;
+    setOuvindo(true);
+  });
+
+  useSpeechRecognitionEvent('end', () => {
+    ouvindoRef.current = false;
+    setOuvindo(false);
+  });
+
+  useSpeechRecognitionEvent('result', (evento) => {
+    if (!ouvindoRef.current) return;
+    const fala = evento.results?.[0]?.transcript ?? '';
+    const base = textoAntesDaFala.current;
+    setTexto(`${base}${base && fala ? ' ' : ''}${fala}`.slice(0, MAX_QUESTION_LENGTH));
+  });
+
+  useSpeechRecognitionEvent('error', (evento) => {
+    ouvindoRef.current = false;
+    setOuvindo(false);
+    // "aborted" é o cancelamento feito pelo próprio app; "no-speech" é silêncio.
+    if (evento.error === 'aborted' || evento.error === 'no-speech') return;
+    if (evento.error === 'not-allowed') {
+      avisarPermissao('o microfone e o reconhecimento de voz');
+      return;
+    }
+    Alert.alert(
+      'Não foi possível ouvir',
+      evento.error === 'language-not-supported'
+        ? 'O reconhecimento de voz em português não está disponível neste aparelho.'
+        : 'O reconhecimento de voz falhou. Tente novamente ou escreva seu pedido.',
+    );
+  });
+
+  // Anima o botão enquanto grava.
+  useEffect(() => {
+    if (!ouvindo) {
+      pulso.setValue(0);
+      return undefined;
+    }
+    const animacao = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulso, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulso, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    animacao.start();
+    return () => animacao.stop();
+  }, [ouvindo, pulso]);
+
+  // Sair da aba (ou do app) não pode deixar o microfone aberto.
+  useFocusEffect(
+    useCallback(() => () => {
+      if (ouvindoRef.current) ExpoSpeechRecognitionModule.abort();
+    }, []),
+  );
+
+  const cancelarGravacao = () => {
+    if (!ouvindoRef.current) return;
+    ouvindoRef.current = false;
+    setOuvindo(false);
+    ExpoSpeechRecognitionModule.abort();
+  };
+
+  const avisarPermissao = (recurso) => {
+    Alert.alert(
+      `Permita o acesso a ${recurso}`,
+      'Ative a permissão nas configurações do aparelho para usar este recurso.',
+      [
+        { text: 'Agora não', style: 'cancel' },
+        { text: 'Abrir configurações', onPress: () => Linking.openSettings() },
+      ],
+    );
+  };
+
+  const alternarGravacao = async () => {
+    if (ouvindoRef.current) {
+      ExpoSpeechRecognitionModule.stop();
+      return;
+    }
+    if (bloqueado) return;
+
+    const permissao = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    if (!permissao.granted) {
+      avisarPermissao('o microfone e o reconhecimento de voz');
+      return;
+    }
+
+    textoAntesDaFala.current = texto.trim();
+    ExpoSpeechRecognitionModule.start({
+      lang: 'pt-BR',
+      interimResults: true,
+      continuous: false,
+      addsPunctuation: true,
+      requiresOnDeviceRecognition: SO_RECONHECIMENTO_NO_APARELHO,
+    });
+  };
+
+  // ---------- Câmera: tira a foto e mostra no chat ----------
+  const tirarFoto = async () => {
+    if (bloqueado) return;
+    cancelarGravacao();
+
+    const permissao = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissao.granted) {
+      avisarPermissao('a câmera');
+      return;
+    }
+
+    try {
+      const resultado = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.7,
+      });
+      if (!resultado.canceled && resultado.assets?.[0]?.uri) {
+        setFoto(resultado.assets[0].uri);
+      }
+    } catch {
+      Alert.alert('Câmera indisponível', 'Não foi possível abrir a câmera neste aparelho.');
+    }
+  };
+
   const novaConversa = () => {
     if (enviando) return;
     // Cancela uma abertura de conversa que ainda esteja carregando.
@@ -123,13 +263,18 @@ export default function ChatIAScreen() {
     setConversaId(null);
     setMensagens([]);
     setTexto('');
+    setFoto(null);
+    cancelarGravacao();
   };
 
   const enviar = async (pedido) => {
     const t = (pedido ?? texto).trim();
     if (!t || bloqueado) return;
 
-    setMensagens((m) => [...m, { autor: 'aluno', texto: t }]);
+    const fotoDoPedido = foto;
+    cancelarGravacao();
+    setMensagens((m) => [...m, { autor: 'aluno', texto: t, foto: fotoDoPedido }]);
+    setFoto(null);
     setTexto('');
     setEnviando(true);
     try {
@@ -205,6 +350,7 @@ export default function ChatIAScreen() {
             mensagens.map((m, i) =>
               m.autor === 'aluno' ? (
                 <View key={i} style={e.balao}>
+                  {m.foto && <Image source={{ uri: m.foto }} style={e.balaoFoto} />}
                   <Text style={e.balaoTexto}>{m.texto}</Text>
                 </View>
               ) : (
@@ -232,7 +378,7 @@ export default function ChatIAScreen() {
         </ScrollView>
 
         <View style={e.rodape}>
-          {/* Anexos e áudio voltam quando o back ler anexos no chat e houver gravação. */}
+          {/* Anexos de arquivo voltam quando o back ler anexos no chat. */}
           <View style={[tela.linha, { gap: 6 }]}>
             <Pressable onPress={() => setHistoricoAberto(true)} style={[e.novaConversa, tela.linha, { gap: 5 }]} hitSlop={6} disabled={enviando}>
               <Ionicons name="time-outline" size={12} color={COR.lilas} />
@@ -248,18 +394,77 @@ export default function ChatIAScreen() {
             </Pressable>
           </View>
 
+          {foto && (
+            <View style={[tela.linha, { gap: 10 }]}>
+              <View>
+                <Image source={{ uri: foto }} style={e.fotoMiniatura} />
+                <Pressable
+                  onPress={() => setFoto(null)}
+                  hitSlop={8}
+                  style={e.fotoRemover}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remover foto"
+                >
+                  <Ionicons name="close" size={12} color={COR.fundo} />
+                </Pressable>
+              </View>
+              <Text style={[txt.tx, { flex: 1, fontSize: 10.5, lineHeight: 15 }]}>
+                A foto aparece só neste chat: o Tuti ainda não lê imagens. Escreva sua pergunta junto.
+              </Text>
+            </View>
+          )}
+
           <View style={[e.campo, bloqueado && { opacity: 0.45 }]}>
+            <Pressable
+              onPress={tirarFoto}
+              hitSlop={8}
+              disabled={bloqueado}
+              accessibilityRole="button"
+              accessibilityLabel="Tirar foto"
+            >
+              <Icone nome="camera" tam={18} cor={foto ? COR.menta : COR.lilas} />
+            </Pressable>
             <TextInput
               style={e.campoTexto}
               value={texto}
               onChangeText={setTexto}
-              placeholder={mensagens.length === 0 ? 'Escreva seu pedido…' : 'Faça outra pergunta…'}
+              placeholder={
+                ouvindo
+                  ? 'Ouvindo…'
+                  : foto
+                    ? 'Escreva sua pergunta sobre a foto…'
+                    : mensagens.length === 0
+                      ? 'Escreva seu pedido…'
+                      : 'Faça outra pergunta…'
+              }
               placeholderTextColor={COR.apagado}
               onSubmitEditing={() => enviar()}
               returnKeyType="send"
               maxLength={MAX_QUESTION_LENGTH}
-              editable={!bloqueado}
+              editable={!bloqueado && !ouvindo}
             />
+            <Pressable
+              onPress={alternarGravacao}
+              hitSlop={8}
+              disabled={bloqueado && !ouvindo}
+              style={[e.micBotao, ouvindo && e.micBotaoAtivo]}
+              accessibilityRole="button"
+              accessibilityLabel={ouvindo ? 'Parar de gravar' : 'Falar o pedido'}
+            >
+              {ouvindo && (
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    e.micPulso,
+                    {
+                      opacity: pulso.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] }),
+                      transform: [{ scale: pulso.interpolate({ inputRange: [0, 1], outputRange: [1, 1.6] }) }],
+                    },
+                  ]}
+                />
+              )}
+              {ouvindo ? <View style={e.micParar} /> : <Icone nome="mic" tam={18} cor={COR.lilas} />}
+            </Pressable>
             <Enviar tam={30} icone={14} onPress={() => enviar()} />
           </View>
         </View>
@@ -285,6 +490,7 @@ const e = StyleSheet.create({
     paddingVertical: 12, paddingHorizontal: 14,
     borderTopLeftRadius: 18, borderTopRightRadius: 18, borderBottomRightRadius: 6, borderBottomLeftRadius: 18,
   },
+  balaoFoto: { width: 180, height: 180, borderRadius: 12, marginBottom: 8 },
   balaoTexto: { color: COR.tinta, fontSize: 11.5, lineHeight: 16.7, fontFamily: F.m },
   respostaTexto: { flex: 1, color: COR.tinta, fontSize: 11.5, lineHeight: 17.3, fontFamily: F.r },
   assunto: { color: COR.tinta, fontSize: 11, fontFamily: F.m },
@@ -298,4 +504,13 @@ const e = StyleSheet.create({
     borderRadius: 99, paddingLeft: 15, paddingRight: 8, height: 50,
   },
   campoTexto: { flex: 1, color: COR.tinta, fontSize: 12.5, fontFamily: F.r },
+  fotoMiniatura: { width: 52, height: 52, borderRadius: 12, backgroundColor: COR.superficie2 },
+  fotoRemover: {
+    position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: 9,
+    backgroundColor: COR.tinta, alignItems: 'center', justifyContent: 'center',
+  },
+  micBotao: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  micBotaoAtivo: { backgroundColor: 'rgba(255,122,89,0.18)' },
+  micPulso: { ...StyleSheet.absoluteFillObject, borderRadius: 15, backgroundColor: COR.coral },
+  micParar: { width: 10, height: 10, borderRadius: 2, backgroundColor: COR.coral },
 });

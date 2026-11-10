@@ -33,7 +33,21 @@
       "expo-font",
       "expo-secure-store",
       "@react-native-google-signin/google-signin",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Permita que o $(PRODUCT_NAME) use a câmera para você tirar fotos no chat."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Permita que o $(PRODUCT_NAME) use o microfone para você falar seu pedido.",
+          "speechRecognitionPermission": "Permita que o $(PRODUCT_NAME) converta sua fala em texto.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ]
     ],
     "extra": {
       "router": {},
