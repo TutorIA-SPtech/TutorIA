@@ -23,7 +23,8 @@ const MAX_TENTATIVAS = 5;
 
 export default function VerificarCodigoScreen() {
     const router = useRouter();
-    const { email } = useLocalSearchParams();
+    const { email, origem } = useLocalSearchParams();
+    const vindoDoPerfil = origem === 'perfil';
     const [codigo, setCodigo] = useState(Array(DIGITOS).fill(''));
     const [focado, setFocado] = useState(0);
     const [erro, setErro] = useState('');
@@ -82,7 +83,7 @@ export default function VerificarCodigoScreen() {
         setEnviando(true);
         try {
             await verifyPasswordToken(email, token);
-            router.push({ pathname: '/new-password', params: { email, codigo: token } });
+            router.push({ pathname: '/new-password', params: { email, codigo: token, origem } });
         } catch (error) {
             if (mostrarErro(error, 'Não foi possível verificar o código. Tente novamente.')) {
                 setTentativas((t) => t + 1);
@@ -140,7 +141,7 @@ export default function VerificarCodigoScreen() {
                             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                                 <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
                             </TouchableOpacity>
-                            <Text style={styles.headerTitle}>Recuperar senha</Text>
+                            <Text style={styles.headerTitle}>{vindoDoPerfil ? 'Alterar senha' : 'Recuperar senha'}</Text>
                             <Text style={styles.step}>2 de 3</Text>
                         </View>
 
@@ -203,9 +204,11 @@ export default function VerificarCodigoScreen() {
                                     {contagem > 0 ? `Reenviar em 0:${String(contagem).padStart(2, '0')}` : 'Reenviar código'}
                                 </Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.pill} onPress={() => router.back()}>
-                                <Text style={styles.pillText}>Trocar e-mail</Text>
-                            </TouchableOpacity>
+                            {!vindoDoPerfil && (
+                                <TouchableOpacity style={styles.pill} onPress={() => router.back()}>
+                                    <Text style={styles.pillText}>Trocar e-mail</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
 
                         <View style={[styles.buttonWrap, (!completo || expirou) && styles.disabled]}>
@@ -226,9 +229,9 @@ export default function VerificarCodigoScreen() {
                     </View>
 
                     <View style={styles.footerRow}>
-                        <Text style={styles.footerText}>Lembrei a senha · </Text>
-                        <TouchableOpacity onPress={() => router.replace('/login')}>
-                            <Text style={styles.footerLink}>Voltar para entrar</Text>
+                        <Text style={styles.footerText}>{vindoDoPerfil ? 'Desistiu? · ' : 'Lembrei a senha · '}</Text>
+                        <TouchableOpacity onPress={() => (vindoDoPerfil ? router.back() : router.replace('/login'))}>
+                            <Text style={styles.footerLink}>{vindoDoPerfil ? 'Voltar ao perfil' : 'Voltar para entrar'}</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>

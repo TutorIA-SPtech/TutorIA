@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useLogout } from '../../../hooks/useLogout';
 import { ApiError } from '../../../services/apiClient';
@@ -94,6 +94,8 @@ function dateParaHorario(data) {
 }
 
 export default function RotinaScreen() {
+  const { origem } = useLocalSearchParams();
+  const vindoDoPerfil = origem === 'perfil';
   const [dataDaProva, setDataDaProva] = useState('');
   const [tempoPorDia, setTempoPorDia] = useState(60);
   const [diasEscolhidos, setDiasEscolhidos] = useState(['seg', 'ter', 'qua', 'qui', 'sex']);
@@ -203,7 +205,11 @@ export default function RotinaScreen() {
         targetCourseId: cursoId,
       });
       await saveStoredReminder({ ativo: lembreteAtivo, horario });
-      router.push('/onboarding/convite');
+      if (vindoDoPerfil) {
+        router.back();
+      } else {
+        router.push('/onboarding/convite');
+      }
     } catch (error) {
       setErro(error instanceof ApiError ? error.message : 'Não foi possível salvar sua rotina. Tente novamente.');
     } finally {
@@ -246,22 +252,26 @@ export default function RotinaScreen() {
         <Pressable onPress={voltar} style={styles.voltar} hitSlop={10}>
           <Ionicons name="arrow-back" size={15} color={COR.apagado} />
         </Pressable>
-        <Text style={styles.cabecalhoTitulo}>Sua rotina</Text>
-        <View style={styles.passo}>
-          <Text style={styles.passoTexto}>2 / 3</Text>
-        </View>
+        <Text style={styles.cabecalhoTitulo}>{vindoDoPerfil ? 'Editar rotina' : 'Sua rotina'}</Text>
+        {!vindoDoPerfil && (
+          <View style={styles.passo}>
+            <Text style={styles.passoTexto}>2 / 3</Text>
+          </View>
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.conteudo}>
         {/* Barra de progresso do cadastro */}
-        <View style={styles.barra}>
-          <LinearGradient
-            colors={GRADIENTE}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.barraPreenchida}
-          />
-        </View>
+        {!vindoDoPerfil && (
+          <View style={styles.barra}>
+            <LinearGradient
+              colors={GRADIENTE}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.barraPreenchida}
+            />
+          </View>
+        )}
 
         <Text style={styles.titulo}>Quanto tempo você tem?</Text>
 
@@ -426,7 +436,7 @@ export default function RotinaScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.botao}
           >
-            <Text style={styles.botaoTexto}>{salvando ? 'Salvando...' : 'Continuar'}</Text>
+            <Text style={styles.botaoTexto}>{salvando ? 'Salvando...' : vindoDoPerfil ? 'Salvar' : 'Continuar'}</Text>
             {salvando ? (
               <ActivityIndicator color={COR.fundo} />
             ) : (

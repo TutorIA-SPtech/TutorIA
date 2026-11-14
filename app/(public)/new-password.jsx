@@ -16,6 +16,7 @@ import PrimaryButton from '../../components/Button';
 import DotGridBackground from '../../components/DotGridBackground';
 import { resetPassword } from '../../services/authApi';
 import { ApiError } from '../../services/apiClient';
+import { useMensagem } from '../../components/CaixaMensagem';
 
 const MAX_SENHA = 72;
 
@@ -42,7 +43,9 @@ const NIVEIS = [
 
 export default function NovaSenhaScreen() {
     const router = useRouter();
-    const { email, codigo } = useLocalSearchParams();
+    const { email, codigo, origem } = useLocalSearchParams();
+    const vindoDoPerfil = origem === 'perfil';
+    const { mostrarMensagem } = useMensagem();
     const [senha, setSenha] = useState('');
     const [confirmar, setConfirmar] = useState('');
     const [verSenha, setVerSenha] = useState(false);
@@ -64,7 +67,12 @@ export default function NovaSenhaScreen() {
         setTokenExpirado(false);
         try {
             await resetPassword({ email, token: codigo, newPassword: senha });
-            router.dismissTo({ pathname: '/login', params: { senhaRedefinida: '1' } });
+            if (vindoDoPerfil) {
+                router.dismissTo('/perfil');
+                mostrarMensagem({ tipo: 'sucesso', titulo: 'Senha alterada', mensagem: 'Use a nova senha no próximo login.' });
+            } else {
+                router.dismissTo({ pathname: '/login', params: { senhaRedefinida: '1' } });
+            }
         } catch (error) {
             setTokenExpirado(error instanceof ApiError && error.code === 'INVALID_RESET_TOKEN');
             setErro(error instanceof ApiError
@@ -104,7 +112,7 @@ export default function NovaSenhaScreen() {
                             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                                 <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
                             </TouchableOpacity>
-                            <Text style={styles.headerTitle}>Recuperar senha</Text>
+                            <Text style={styles.headerTitle}>{vindoDoPerfil ? 'Alterar senha' : 'Recuperar senha'}</Text>
                             <Text style={styles.step}>3 de 3</Text>
                         </View>
 
@@ -199,7 +207,7 @@ export default function NovaSenhaScreen() {
                             <View style={styles.formError}>
                                 <Text style={styles.errorText} accessibilityRole="alert">{erro}</Text>
                                 {tokenExpirado && (
-                                    <TouchableOpacity onPress={() => router.dismissTo('/recover-password')}>
+                                    <TouchableOpacity onPress={() => (vindoDoPerfil ? router.back() : router.dismissTo('/recover-password'))}>
                                         <Text style={styles.linkText}>Pedir novo código</Text>
                                     </TouchableOpacity>
                                 )}

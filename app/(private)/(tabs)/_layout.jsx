@@ -17,7 +17,11 @@ export default function TabsLayout() {
       <Tabs.Screen name="plano" />
       <Tabs.Screen name="ia" />
       <Tabs.Screen name="progresso" />
+      <Tabs.Screen name="perfil" />
       <Tabs.Screen name="limite" options={{ href: null }} />
+      <Tabs.Screen name="perfil-dados" options={{ href: null }} />
+      <Tabs.Screen name="privacidade" options={{ href: null }} />
+      <Tabs.Screen name="chances" options={{ href: null }} />
     </Tabs>
   );
 }
