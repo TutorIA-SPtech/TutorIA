@@ -1,4 +1,5 @@
 import { apiRequest, ApiError } from './apiClient';
+import { getLocalAccount, saveLocalAccount } from './localAccountStorage';
 
 async function authenticate(path, credentials, requestMessages = {}) {
   const response = await apiRequest(path, {
@@ -22,12 +23,31 @@ async function authenticate(path, credentials, requestMessages = {}) {
   };
 }
 
-export function signUp({ name, email, password }) {
-  return authenticate('/api/v1/auth/sign-up', { name, email, password });
+// Guarda nome/e-mail no aparelho para o Perfil. Nunca derruba o login se falhar.
+async function lembrarConta({ name, email }) {
+  try {
+    const local = await getLocalAccount();
+    const mesmoUsuario = local?.email?.toLowerCase() === email.trim().toLowerCase();
+    await saveLocalAccount({
+      name: name ?? (mesmoUsuario ? local.name : ''),
+      nickname: mesmoUsuario ? local.nickname : null,
+      email: email.trim(),
+    });
+  } catch {
+    // ignorado de propósito
+  }
 }
 
-export function login({ email, password }) {
-  return authenticate('/api/v1/auth/login', { email, password });
+export async function signUp({ name, email, password }) {
+  const auth = await authenticate('/api/v1/auth/sign-up', { name, email, password });
+  await lembrarConta({ name, email });
+  return auth;
+}
+
+export async function login({ email, password }) {
+  const auth = await authenticate('/api/v1/auth/login', { email, password });
+  await lembrarConta({ email });
+  return auth;
 }
 
 export function loginWithGoogle(idToken) {

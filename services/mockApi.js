@@ -16,6 +16,14 @@ const INITIAL_MASTERY = {
       ],
     },
     {
+      areaId: 4,
+      areaName: 'Linguagens',
+      averageProbability: 0.73,
+      subjects: [
+        { subjectId: 41, subjectName: 'Interpretação de texto', probability: 0.73 },
+      ],
+    },
+    {
       areaId: 2,
       areaName: 'Ciências da natureza',
       averageProbability: 0.41,
@@ -32,6 +40,44 @@ const INITIAL_MASTERY = {
       ],
     },
   ],
+};
+
+const INITIAL_WEEKLY = {
+  weeks: [
+    { weekStart: '2026-09-07', averageProbability: 0.41 },
+    { weekStart: '2026-09-14', averageProbability: 0.44 },
+    { weekStart: '2026-09-21', averageProbability: 0.48 },
+    { weekStart: '2026-09-28', averageProbability: 0.47 },
+    { weekStart: '2026-10-05', averageProbability: 0.52 },
+    { weekStart: '2026-10-12', averageProbability: 0.56 },
+    { weekStart: '2026-10-19', averageProbability: 0.59 },
+  ],
+  masteryDelta30Days: 0.11,
+  areas: [
+    { areaId: 1, areaName: 'Matemática', delta30Days: 0.08 },
+    { areaId: 4, areaName: 'Linguagens', delta30Days: 0.05 },
+    { areaId: 2, areaName: 'Ciências da natureza', delta30Days: -0.03 },
+    { areaId: 3, areaName: 'Humanas', delta30Days: 0.04 },
+  ],
+};
+
+const INITIAL_ADMISSION_CHANCE = {
+  course: { name: 'Engenharia Civil', institutionName: 'UFPE' },
+  examDate: '2026-11-08',
+  probability: 0.62,
+  projectedScore: 698,
+  cutoffScore: 712,
+  cutoffYears: '2023–2025',
+  levers: [
+    { areaId: 2, areaName: 'Ciências da natureza', from: 0.41, to: 0.55, points: 9 },
+    { areaId: 3, areaName: 'Humanas', from: 0.57, to: 0.65, points: 5 },
+  ],
+};
+
+const INITIAL_ACCOUNT = {
+  name: 'Marina Souza',
+  nickname: 'Mari',
+  email: 'marina.souza@email.com',
 };
 
 const INITIAL_AI_USAGE = [
@@ -56,6 +102,7 @@ function parseRequestBody(config) {
 function createState() {
   return {
     studyProfile: null,
+    account: { ...INITIAL_ACCOUNT },
     aiUsage: INITIAL_AI_USAGE.map((category) => ({ ...category })),
   };
 }
@@ -78,7 +125,27 @@ export function installMockApi(api, MockAdapter) {
   mock.onAny(/\/api\/v1\/auth\//).passThrough();
 
   mock.onGet('/api/v1/me/progress').reply(200, INITIAL_PROGRESS);
+  mock.onGet('/api/v1/me/progress/weekly').reply(200, INITIAL_WEEKLY);
   mock.onGet('/api/v1/me/mastery').reply(200, INITIAL_MASTERY);
+  mock.onGet('/api/v1/me/admission-chance').reply(200, INITIAL_ADMISSION_CHANCE);
+
+  mock.onGet('/api/v1/me/account').reply(() => [200, { ...state.account }]);
+  mock.onPatch('/api/v1/me/account').reply((config) => {
+    const { name, nickname } = parseRequestBody(config);
+    if (!name || !String(name).trim()) {
+      return [400, { code: 'VALIDATION_ERROR', fields: { name: 'obrigatório' } }];
+    }
+    state.account = { ...state.account, name: String(name).trim(), nickname: nickname || null };
+    return [200, { ...state.account }];
+  });
+  mock.onPut('/api/v1/me/account/email').reply((config) => {
+    const { newEmail, currentPassword } = parseRequestBody(config);
+    if (!currentPassword || currentPassword.length < 8) {
+      return [401, { code: 'INVALID_CREDENTIALS' }];
+    }
+    state.account = { ...state.account, email: newEmail };
+    return [200, { accessToken: 'demo', tokenType: 'Bearer', account: { ...state.account } }];
+  });
 
   mock.onGet('/api/v1/me/study-profile').reply(() => (
     state.studyProfile

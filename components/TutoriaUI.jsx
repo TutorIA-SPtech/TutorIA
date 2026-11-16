@@ -80,7 +80,7 @@ export function Fundo({ glow = false }) {
   );
 }
 
-export function Cabecalho({ titulo, voltar = false, selo, onSelo }) {
+export function Cabecalho({ titulo, voltar = false, selo, onSelo, estiloSelo }) {
   const irPraTras = () => (router.canGoBack() ? router.back() : router.replace('/'));
   return (
     <View style={u.cab}>
@@ -91,8 +91,8 @@ export function Cabecalho({ titulo, voltar = false, selo, onSelo }) {
       )}
       <Text style={u.cabTitulo}>{titulo}</Text>
       {selo ? (
-        <Pressable onPress={onSelo} disabled={!onSelo} style={u.selo} hitSlop={8}>
-          <Text style={u.seloTexto}>{selo}</Text>
+        <Pressable onPress={onSelo} disabled={!onSelo} style={[u.selo, estiloSelo === 'ambar' && u.seloAmbar]} hitSlop={8}>
+          <Text style={[u.seloTexto, estiloSelo === 'ambar' && { color: '#2A1B00' }]}>{selo}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -300,14 +300,15 @@ const ABAS = [
   { id: 'inicio', rotulo: 'Início', icone: 'inicio' },
   { id: 'plano', rotulo: 'Plano', icone: 'plano' },
   { id: 'ia', rotulo: 'IA', icone: 'estrela' },
-  { id: 'progresso', rotulo: 'Progresso', icone: 'barras' }
+  { id: 'progresso', rotulo: 'Progresso', icone: 'barras' },
+  { id: 'perfil', rotulo: 'Perfil', icone: 'perfil' },
 ];
 const PILULA_L = 44;
 const PILULA_A = 32;
 
 export function TabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
-  const ABA_MAE = { limite: 'ia' };
+  const ABA_MAE = { limite: 'ia', 'perfil-dados': 'perfil', privacidade: 'perfil', chances: 'progresso' };
   const rotaAtual = state.routes[state.index].name;
   const ativa = ABA_MAE[rotaAtual] ?? rotaAtual;
   const indice = Math.max(0, ABAS.findIndex((a) => a.id === ativa));
@@ -368,6 +369,7 @@ const u = StyleSheet.create({
   cabTitulo: { color: COR.tinta, fontSize: 13.5, fontFamily: F.b },
   selo: { marginLeft: 'auto', backgroundColor: COR.superficie, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5 },
   seloTexto: { color: COR.apagado, fontSize: 10, fontFamily: F.monoB },
+  seloAmbar: { backgroundColor: '#FFC978', borderWidth: 1.5, borderColor: 'rgba(32,30,29,0.5)' },
   out: { borderWidth: 1, borderColor: COR.linha, borderRadius: 18, padding: 13, gap: 8 },
   btn: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingVertical: 15, paddingHorizontal: 18 },
   btnTexto: { color: COR.fundo, fontSize: 14, fontFamily: F.b },
