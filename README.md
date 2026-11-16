@@ -9,6 +9,15 @@ O frontend usa `EXPO_PUBLIC_API_URL` e os endpoints de autenticação do backend
 - `POST /api/v1/auth/password/recovery`: solicitação de recuperação com `email`.
 - `POST /api/v1/auth/google`: autenticação com `{ "idToken": "<token do Google>" }`.
 
+### Catálogo e curso pretendido
+
+- `GET /api/v1/courses/degrees` lista os tipos de curso disponíveis.
+- `GET /api/v1/courses?degree=<tipo>` lista cursos paginados pelo tipo selecionado.
+- `GET /api/v1/courses/cutoff-statistics?name=<curso>&degree=<tipo>` retorna mínimo,
+  mediana e máximo das notas de corte de 2025 para ampla concorrência.
+- `PUT /api/v1/me/study-profile` persiste o curso pretendido em `targetCourseName`,
+  sem associar o perfil a uma instituição específica.
+
 ### Iniciar no celular com Expo Go
 
 1. Inicie o backend Spring Boot na porta `8080`.

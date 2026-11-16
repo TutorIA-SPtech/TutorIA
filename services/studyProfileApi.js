@@ -18,14 +18,14 @@ export async function getStudyProfile() {
 }
 
 // O PUT substitui o perfil inteiro (upsert), então todos os campos precisam ir juntos.
-export function saveStudyProfile({ examDate, dailyMinutes, studyDays, targetCourseId }) {
+export function saveStudyProfile({ examDate, dailyMinutes, studyDays, targetCourseName }) {
   return apiRequest(STUDY_PROFILE_PATH, {
     method: 'PUT',
     data: {
       examDate,
       dailyMinutes,
       studyDays,
-      targetCourseId: targetCourseId ?? null,
+      targetCourseName: targetCourseName ?? null,
     },
     networkErrorMessage: 'Não foi possível salvar sua rotina. Confira a conexão e tente novamente.',
   });

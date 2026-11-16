@@ -41,6 +41,14 @@ const INITIAL_AI_USAGE = [
   { category: 'PLAN_REVISION', used: 0, limit: 2 },
 ];
 
+const COURSE_DEGREES = ['BACHARELADO', 'LICENCIATURA', 'TECNÓLOGO'];
+const COURSE_CATALOG = [
+  { name: 'Engenharia Civil', degree: 'BACHARELADO' },
+  { name: 'Engenharia de Software', degree: 'BACHARELADO' },
+  { name: 'Licenciatura em Matemática', degree: 'LICENCIATURA' },
+  { name: 'Análise e Desenvolvimento de Sistemas', degree: 'TECNÓLOGO' },
+];
+
 function parseRequestBody(config) {
   if (!config.data) return {};
   if (typeof config.data === 'string') {
@@ -85,19 +93,60 @@ export function installMockApi(api, MockAdapter) {
       ? [200, state.studyProfile]
       : [404, { code: 'STUDY_PROFILE_NOT_FOUND', message: 'Perfil de estudo ainda não configurado.' }]
   ));
+  mock.onGet('/api/v1/courses/degrees').reply(200, COURSE_DEGREES);
+  mock.onGet('/api/v1/courses').reply((config) => {
+    const { degree, page = 0, size = 20 } = config.params ?? {};
+    const courses = COURSE_CATALOG.filter((course) => course.degree === degree);
+    const pageNumber = Number(page);
+    const pageSize = Number(size);
+    const start = pageNumber * pageSize;
+    const content = courses.slice(start, start + pageSize);
+
+    return [200, {
+      content,
+      number: pageNumber,
+      size: pageSize,
+      totalElements: courses.length,
+      totalPages: courses.length === 0 ? 0 : Math.ceil(courses.length / pageSize),
+    }];
+  });
+  mock.onGet('/api/v1/courses/cutoff-statistics').reply((config) => {
+    const { name, degree } = config.params ?? {};
+    if (name === 'Engenharia Civil' && degree === 'BACHARELADO') {
+      return [200, {
+        name,
+        degree,
+        year: 2025,
+        admissionCategory: 'AMPLA_CONCORRENCIA',
+        sampleSize: 3,
+        minimumScore: 650,
+        minimumInstitutions: ['UFPE'],
+        medianScore: 710,
+        maximumScore: 780,
+        maximumInstitutions: ['UFRJ'],
+      }];
+    }
+
+    return [200, {
+      name,
+      degree,
+      year: 2025,
+      admissionCategory: 'AMPLA_CONCORRENCIA',
+      sampleSize: 0,
+      minimumScore: null,
+      minimumInstitutions: [],
+      medianScore: null,
+      maximumScore: null,
+      maximumInstitutions: [],
+    }];
+  });
   mock.onPut('/api/v1/me/study-profile').reply((config) => {
     const body = parseRequestBody(config);
     state.studyProfile = {
       examDate: body.examDate,
       dailyMinutes: body.dailyMinutes,
       studyDays: body.studyDays ?? [],
-      targetCourse: body.targetCourseId
-        ? {
-          id: body.targetCourseId,
-          name: 'Engenharia Civil',
-          institutionName: 'UFPE',
-        }
-        : null,
+      targetCourseName: body.targetCourseName ?? null,
     };
     return [200, state.studyProfile];
   });

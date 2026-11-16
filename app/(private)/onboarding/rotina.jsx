@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useLogout } from '../../../hooks/useLogout';
 import { ApiError } from '../../../services/apiClient';
@@ -94,13 +94,20 @@ function dateParaHorario(data) {
 }
 
 export default function RotinaScreen() {
+  const params = useLocalSearchParams();
+  const nomeCursoDaRota = Array.isArray(params.targetCourseName)
+    ? params.targetCourseName[0]
+    : params.targetCourseName;
+  const cursoDaRota = typeof nomeCursoDaRota === 'string' && nomeCursoDaRota.trim()
+    ? nomeCursoDaRota.trim()
+    : null;
   const [dataDaProva, setDataDaProva] = useState('');
   const [tempoPorDia, setTempoPorDia] = useState(60);
   const [diasEscolhidos, setDiasEscolhidos] = useState(['seg', 'ter', 'qua', 'qui', 'sex']);
   const [lembreteAtivo, setLembreteAtivo] = useState(true);
   const [horario, setHorario] = useState('19:00');
   const [seletorAberto, setSeletorAberto] = useState(false);
-  const [cursoId, setCursoId] = useState(null);
+  const [cursoNome, setCursoNome] = useState(cursoDaRota);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
@@ -128,8 +135,8 @@ export default function RotinaScreen() {
           setDiasEscolhidos(
             DIAS_DA_SEMANA.filter((dia) => perfil.studyDays?.includes(dia.api)).map((dia) => dia.id),
           );
-          // O PUT substitui o perfil inteiro: guardar o curso para não apagá-lo ao salvar.
-          setCursoId(perfil.targetCourse?.id ?? null);
+          // A seleção feita nesta etapa prevalece sobre o curso previamente salvo.
+          setCursoNome(cursoDaRota ?? perfil.targetCourseName ?? null);
         }
 
         if (lembrete) {
@@ -149,7 +156,7 @@ export default function RotinaScreen() {
     return () => {
       montado = false;
     };
-  }, []);
+  }, [cursoDaRota]);
 
   const alterarHorario = () => {
     if (Platform.OS === 'android') {
@@ -200,7 +207,7 @@ export default function RotinaScreen() {
         examDate: paraDataDaApi(dataDaProva),
         dailyMinutes: tempoPorDia,
         studyDays: DIAS_DA_SEMANA.filter((dia) => diasEscolhidos.includes(dia.id)).map((dia) => dia.api),
-        targetCourseId: cursoId,
+        targetCourseName: cursoNome,
       });
       await saveStoredReminder({ ativo: lembreteAtivo, horario });
       router.push('/onboarding/convite');
