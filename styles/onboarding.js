@@ -187,6 +187,40 @@ export const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
+  seletorGrupo: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  seletorLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.9,
+  },
+  seletorPlaceholder: {
+    color: colors.textMuted,
+  },
+  seletorDesabilitado: {
+    opacity: 0.58,
+  },
+  seletorAjuda: {
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  erroSeletor: {
+    gap: 6,
+  },
+  textoErroSeletor: {
+    color: colors.coral,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  textoTentarNovamente: {
+    color: colors.lavender,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   notaCorteCard: {
     marginTop: 16,
     borderRadius: 16,
@@ -216,21 +250,121 @@ export const styles = StyleSheet.create({
   },
   notaCorteLabel: {
     color: colors.amber,
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 0.7,
   },
-  notaCorteTexto: {
+  notaCorteLegenda: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    marginTop: 8,
+  },
+  notaCorteEstatisticas: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 18,
+  },
+  notaCorteEstatistica: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  notaCorteTipo: {
+    color: colors.textMuted,
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  notaCorteValor: {
     color: colors.textPrimary,
-    fontSize: 18,
-    lineHeight: 21,
-    marginTop: 25,
+    fontSize: 19,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  notaCorteInstituicao: {
+    color: colors.amber,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  notaCorteAmostra: {
+    color: colors.textMuted,
+    fontSize: 10,
+    marginTop: 12,
+  },
+  carregandoEstatisticas: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+  },
+  erroEstatisticas: {
+    gap: 8,
+    marginTop: 14,
   },
   notaCorteVazia: {
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
     marginTop: 14,
+  },
+  modalFundo: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+  },
+  modalCartao: {
+    maxHeight: '78%',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: 18,
+  },
+  modalCabecalho: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  modalTitulo: {
+    color: colors.textPrimary,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  modalBusca: {
+    color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  modalLista: {
+    flexGrow: 0,
+  },
+  modalOpcao: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingVertical: 10,
+    gap: 12,
+  },
+  modalOpcaoTexto: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: 14,
+  },
+  modalSemOpcoes: {
+    color: colors.textMuted,
+    fontSize: 13,
+    paddingVertical: 18,
+    textAlign: 'center',
   },
   footer: {
     paddingHorizontal: 20,
@@ -277,6 +411,9 @@ export const styles = StyleSheet.create({
     color: colors.onAccent,
     fontSize: 16,
     fontWeight: '700',
+  },
+  continuarTextDisabled: {
+    color: colors.textMuted,
   },
   continuarSeta: {
     position: 'absolute',
