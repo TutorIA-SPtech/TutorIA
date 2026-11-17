@@ -3,9 +3,12 @@ import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import { styles } from '../../../styles/questionnaire/results';
+import StateMessage from '../../../components/StateMessage';
+import { useDiagnosticSession } from '../../../hooks/useDiagnosticSession';
+import { toResultViewModel } from '../../../utils/diagnosticResult';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -84,27 +87,17 @@ const AnimatedProgressBar = ({ targetPercentage, color }) => {
 export default function ResultsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { result: resultParam } = useLocalSearchParams();
-  const diagnosticResult = useMemo(() => {
-    if (!resultParam || Array.isArray(resultParam)) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(resultParam);
-    } catch (error) {
-      console.error('Não foi possível carregar o resultado do diagnóstico.', error);
-      return null;
-    }
-  }, [resultParam]);
+  const { result } = useDiagnosticSession();
+  const diagnosticResult = useMemo(() => toResultViewModel(result), [result]);
 
   if (!diagnosticResult) {
     return (
-      <View style={styles.container}>
-        <Text style={[styles.pageTitle, { margin: 24 }]}>
-          Não foi possível carregar seu resultado.
-        </Text>
-      </View>
+      <StateMessage
+        title="Não foi possível carregar seu resultado."
+        message="Refaça o diagnóstico para ver seu ponto de partida."
+        primaryLabel="Ir para o plano"
+        onPrimary={() => router.replace('/(private)/(tabs)/plano')}
+      />
     );
   }
 
@@ -113,7 +106,7 @@ export default function ResultsScreen() {
       <LinearGradient colors={['rgba(28, 16, 80, 0.4)', 'transparent']} start={{ x: 1, y: 0 }} end={{ x: 0.2, y: 0.6 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
       <LinearGradient colors={['rgba(73, 23, 23, 0.5)', 'transparent']} start={{ x: 0, y: 1 }} end={{ x: 0.8, y: 0.4 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20, paddingBottom: Math.max(insets.bottom, 24) }]}
         showsVerticalScrollIndicator={false}
         bounces={false}
@@ -132,10 +125,10 @@ export default function ResultsScreen() {
 
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionLabel}>POR ÁREA</Text>
-          
+
           <View style={styles.areasList}>
             {diagnosticResult.areas.map((area) => (
-              <View key={area.name} style={styles.areaItem}>
+              <View key={area.key} style={styles.areaItem}>
                 <View style={styles.areaHeader}>
                   <Text style={styles.areaName}>{area.name}</Text>
                   <Text style={[styles.areaScore, { color: area.color }]}>{area.score}%</Text>
@@ -146,16 +139,18 @@ export default function ResultsScreen() {
           </View>
         </View>
 
-        <View style={styles.priorityCard}>
-          <View style={styles.priorityHeader}>
-            <Ionicons name="warning" size={16} color="#FF8A65" />
-            <Text style={styles.priorityLabel}>PRIORIDADE</Text>
+        {diagnosticResult.priority ? (
+          <View style={styles.priorityCard}>
+            <View style={styles.priorityHeader}>
+              <Ionicons name="warning" size={16} color="#FF8A65" />
+              <Text style={styles.priorityLabel}>PRIORIDADE</Text>
+            </View>
+            <Text style={styles.priorityText}>
+              <Text style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{diagnosticResult.priority.subject}</Text>
+              {' — '}{diagnosticResult.priority.reason}
+            </Text>
           </View>
-          <Text style={styles.priorityText}>
-            <Text style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{diagnosticResult.priority.subject}</Text>
-            {' — '}{diagnosticResult.priority.reason}
-          </Text>
-        </View>
+        ) : null}
 
         <View style={styles.footer}>
           <TouchableOpacity
