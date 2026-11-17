@@ -403,12 +403,11 @@ export default function ObjetivoScreen() {
           <View style={styles.notaCorteCard}>
             <View style={styles.notaCorteHeader}>
               <IconeNotaCorte />
-              <Text style={styles.notaCorteLabel}>NOTAS DE CORTE · 2025</Text>
+              <Text style={styles.notaCorteLabel}>NOTA DE CORTE 2025</Text>
             </View>
-            <Text style={styles.notaCorteLegenda}>Ampla concorrência · ofertas do curso</Text>
             {!cursoSelecionado ? (
               <Text style={styles.notaCorteVazia}>
-                Escolha um curso para ver a menor nota, a mediana e a maior nota.
+                Escolha um curso para consultar a nota de corte de referência.
               </Text>
             ) : carregandoEstatisticas ? (
               <View style={styles.carregandoEstatisticas}>
@@ -423,38 +422,10 @@ export default function ObjetivoScreen() {
                 </Pressable>
               </View>
             ) : estatisticas?.sampleSize > 0 ? (
-              <>
-                <View style={styles.notaCorteEstatisticas}>
-                  <View style={styles.notaCorteEstatistica}>
-                    <Text style={styles.notaCorteTipo}>MENOR</Text>
-                    <Text style={styles.notaCorteValor}>
-                      {formatarNota(estatisticas.minimumScore)}
-                    </Text>
-                    <Text style={styles.notaCorteInstituicao} numberOfLines={1}>
-                      {estatisticas.minimumInstitutions.join(", ")}
-                    </Text>
-                  </View>
-                  <View style={styles.notaCorteEstatistica}>
-                    <Text style={styles.notaCorteTipo}>MEDIANA</Text>
-                    <Text style={styles.notaCorteValor}>
-                      {formatarNota(estatisticas.medianScore)}
-                    </Text>
-                    <Text style={styles.notaCorteInstituicao}>das ofertas</Text>
-                  </View>
-                  <View style={styles.notaCorteEstatistica}>
-                    <Text style={styles.notaCorteTipo}>MAIOR</Text>
-                    <Text style={styles.notaCorteValor}>
-                      {formatarNota(estatisticas.maximumScore)}
-                    </Text>
-                    <Text style={styles.notaCorteInstituicao} numberOfLines={1}>
-                      {estatisticas.maximumInstitutions.join(", ")}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.notaCorteAmostra}>
-                  Base: {estatisticas.sampleSize} {estatisticas.sampleSize === 1 ? "oferta" : "ofertas"}.
-                </Text>
-              </>
+              <Text style={styles.notaCorteTexto}>
+                Mediana: {formatarNota(estatisticas.medianScore)} na ampla
+                concorrência. Vou mirar nisso ao distribuir seu tempo.
+              </Text>
             ) : (
               <Text style={styles.notaCorteVazia}>
                 Ainda não há notas de ampla concorrência de 2025 para este curso.

@@ -235,7 +235,6 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    fontSize: 11,
   },
   notaIcone: {
     flexDirection: 'row',
@@ -250,47 +249,15 @@ export const styles = StyleSheet.create({
   },
   notaCorteLabel: {
     color: colors.amber,
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '700',
-    letterSpacing: 0.7,
+    letterSpacing: 0.8,
   },
-  notaCorteLegenda: {
-    color: colors.textSecondary,
-    fontSize: 11,
-    marginTop: 8,
-  },
-  notaCorteEstatisticas: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 18,
-  },
-  notaCorteEstatistica: {
-    flex: 1,
-    minWidth: 0,
-    gap: 4,
-  },
-  notaCorteTipo: {
-    color: colors.textMuted,
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  notaCorteValor: {
+  notaCorteTexto: {
     color: colors.textPrimary,
-    fontSize: 19,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-  notaCorteInstituicao: {
-    color: colors.amber,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  notaCorteAmostra: {
-    color: colors.textMuted,
-    fontSize: 10,
-    marginTop: 12,
+    fontSize: 18,
+    lineHeight: 21,
+    marginTop: 25,
   },
   carregandoEstatisticas: {
     flexDirection: 'row',
