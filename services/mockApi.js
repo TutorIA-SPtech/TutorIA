@@ -1,3 +1,5 @@
+import { registerDiagnosticMock } from './mockDiagnostic';
+
 const INITIAL_PROGRESS = {
   currentStreakDays: 12,
   bestStreakDays: 18,
@@ -115,6 +117,8 @@ export function installMockApi(api, MockAdapter) {
     usage.used += 1;
     return [200, { answer: demoAnswer(question) }];
   });
+
+  registerDiagnosticMock(mock);
 
   mock.onAny().reply((config) => [
     501,
